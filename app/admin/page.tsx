@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import AdminDashboard from './AdminForm';
+import React from 'react';
+import AdminProductManagement from '@/app/components/AdminProductManagement';
 
 const AdminPage = () => {
-    return <AdminDashboard />;
+  return <AdminProductManagement />;
 };
 
 export default AdminPage;
