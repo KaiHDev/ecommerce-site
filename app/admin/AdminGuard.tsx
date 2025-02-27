@@ -1,46 +1,35 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [isAdmin, setIsAdmin] = useState(false);
-    const router = useRouter();
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const checkAdmin = async () => {
-            // Get the current session (user must be logged in)
-            const { data: { session } } = await supabase.auth.getSession();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
 
-            if (!session) {
-                console.log('No session found. Redirecting to login...');
-                router.push('/admin/login'); // Redirect to login if not logged in
-                return;
-            }
+      if (!session) {
+        router.push('/login'); // Redirect to login page if not authenticated
+      } else {
+        setIsAuthenticated(true);
+      }
 
-            // Fetch the user's metadata to check for admin role
-            const { data: { user } } = await supabase.auth.getUser();
-            const role = user?.user_metadata?.role;
+      setLoading(false);
+    };
 
-            if (role === 'admin') {
-                console.log('User is admin. Access granted.');
-                setIsAdmin(true);
-            } else {
-                console.warn('User is not admin. Redirecting to login...');
-                router.push('/admin/login'); // Redirect if not an admin
-            }
-            
-            setIsLoading(false);
-        };
+    checkAuth();
+  }, [router]);
 
-        checkAdmin();
-    }, [router]);
+  if (loading) {
+    return <div className="text-center text-white">Loading...</div>;
+  }
 
-    if (isLoading) return <p>Loading...</p>;
-
-    return isAdmin ? <>{children}</> : null;
+  return isAuthenticated ? <>{children}</> : null;
 };
 
 export default AdminGuard;
