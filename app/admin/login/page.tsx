@@ -15,7 +15,7 @@ const LoginPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
-        router.replace("/admin"); // 🔹 Redirect to /admin if already signed in
+        router.replace("/admin");
       }
     };
 
@@ -33,11 +33,10 @@ const LoginPage = () => {
     if (error) {
       setError(error.message);
     } else {
-      router.push("/admin"); // Redirect to admin page on successful login
+      router.push("/admin");
     }
   };
 
-  // 🔹 Handle "Enter" key press
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       handleLogin();
