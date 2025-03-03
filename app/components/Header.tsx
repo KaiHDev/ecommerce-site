@@ -27,6 +27,10 @@ const Header = () => {
     };
   }, []);
 
+  const handleDashboard = async () => {
+    router.push("/admin"); // Redirect to admin page
+  };
+
   const handleSignIn = () => {
     router.push("/admin/login"); // Redirect to login page when "Sign In" is clicked
   };
@@ -44,12 +48,18 @@ const Header = () => {
       </h1>
       <div>
         {user ? (
-          <button
-            onClick={handleSignOut}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all"
-          >
-            Log Out
-          </button>
+          <div>
+            <button 
+              onClick={handleDashboard}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-all mr-3">Dashboard
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all"
+            >
+              Log Out
+            </button>
+          </div>
         ) : (
           <button
             onClick={handleSignIn}

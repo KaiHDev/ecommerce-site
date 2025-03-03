@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { Button } from '@mui/material';
 import EditProductDialog from './EditProductDialog';
+import DeleteBulkDialog from './DeleteBulkDialog';
 
 type Product = {
   id: string;
@@ -24,9 +25,19 @@ type ProductTableProps = {
   fetchProducts: () => void;
 };
 
-const ProductTable = ({ products, searchTerm, setSelectedProduct, setOpenDeleteDialog, paginationModel, setPaginationModel, fetchProducts }: ProductTableProps) => {
+const ProductTable = ({
+  products,
+  searchTerm,
+  setSelectedProduct,
+  setOpenDeleteDialog,
+  paginationModel,
+  setPaginationModel,
+  fetchProducts,
+}: ProductTableProps) => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
   const handleEditClick = (product: Product) => {
     setEditingProduct(product);
@@ -68,13 +79,32 @@ const ProductTable = ({ products, searchTerm, setSelectedProduct, setOpenDeleteD
   ];
 
   return (
-    <div style={{ height: 400, width: '100%' }} className="bg-white rounded-md">
+    <div style={{ height: '100%', width: '100%' }} className="bg-white rounded-md p-4">
+      {/* Delete Selected Button */}
+      <div className="mb-4">
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => setIsBulkDeleteOpen(true)}
+          disabled={selectedProducts.length === 0}
+        >
+          Delete Selected
+        </Button>
+      </div>
+
+      {/* Product Table */}
       <DataGrid
-        rows={products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))}
+        checkboxSelection
+        rows={products.filter((product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )}
         columns={columns}
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
         pageSizeOptions={[5, 10, 20]}
+        onRowSelectionModelChange={(newSelection: GridRowSelectionModel) =>
+          setSelectedProducts(newSelection as string[])
+        }
       />
 
       {/* Edit Product Dialog */}
@@ -83,6 +113,15 @@ const ProductTable = ({ products, searchTerm, setSelectedProduct, setOpenDeleteD
         onClose={() => setOpenEditDialog(false)}
         product={editingProduct}
         fetchProducts={fetchProducts}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <DeleteBulkDialog
+        open={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        selectedProducts={selectedProducts}
+        setProducts={() => fetchProducts()}
+        clearSelection={() => setSelectedProducts([])}
       />
     </div>
   );
