@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
-import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
-import { Button } from '@mui/material';
-import EditProductDialog from './EditProductDialog';
-import DeleteBulkDialog from './DeleteBulkDialog';
+import React, { useState } from "react";
+import { DataGrid, GridColDef, GridRowSelectionModel } from "@mui/x-data-grid";
+import { Button } from "@mui/material";
+import EditProductDialog from "./EditProductDialog";
+import DeleteBulkDialog from "./DeleteBulkDialog";
+import '../styles/globals.css';
 
 type Product = {
   id: string;
@@ -45,12 +46,12 @@ const ProductTable = ({
   };
 
   const columns: GridColDef[] = [
-    { field: 'name', headerName: 'Product Name', flex: 1 },
-    { field: 'price', headerName: 'Price', flex: 1 },
-    { field: 'sku', headerName: 'SKU', flex: 1 },
+    { field: "name", headerName: "Product Name", flex: 1 },
+    { field: "price", headerName: "Price", flex: 1 },
+    { field: "sku", headerName: "SKU", flex: 1 },
     {
-      field: 'actions',
-      headerName: 'Actions',
+      field: "actions",
+      headerName: "Actions",
       renderCell: (params) => (
         <div className="flex space-x-2">
           <Button
@@ -79,7 +80,7 @@ const ProductTable = ({
   ];
 
   return (
-    <div style={{ height: '100%', width: '100%' }} className="bg-white rounded-md p-4">
+    <div style={{ height: "100%", width: "100%" }} className="bg-white rounded-md p-4">
       {/* Delete Selected Button */}
       <div className="mb-4">
         <Button
@@ -102,9 +103,11 @@ const ProductTable = ({
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
         pageSizeOptions={[5, 10, 20]}
-        onRowSelectionModelChange={(newSelection: GridRowSelectionModel) =>
-          setSelectedProducts(newSelection as string[])
-        }
+        rowSelectionModel={selectedProducts} // Correct property name here
+        onRowSelectionModelChange={(newSelection: GridRowSelectionModel) => {
+          setSelectedProducts(newSelection as string[]);
+        }}
+        disableRowSelectionOnClick // Disable selection on clicking row, only checkbox will work
       />
 
       {/* Edit Product Dialog */}

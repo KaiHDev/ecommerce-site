@@ -12,8 +12,10 @@ type Product = {
   primary_image_url?: string;
 };
 
+// Define ProductCardProps type with onAddToBasket
 type ProductCardProps = {
   product: Product;
+  onAddToBasket: (product: Product) => void;
 };
 
 const ProductCard = ({ product }: ProductCardProps) => {

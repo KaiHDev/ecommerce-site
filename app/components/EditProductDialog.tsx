@@ -9,7 +9,7 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
   const [updatedProduct, setUpdatedProduct] = useState(product || { name: "", price: "", sku: "" });
   const [existingImages, setExistingImages] = useState<{ id: string; image_url: string; is_primary: boolean }[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
-  const [primaryImage, setPrimaryImage] = useState<string | null>(null);
+  const [primaryImage, setPrimaryImage] = useState<string | null>(null); // Tracks the primary image URL
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -17,27 +17,29 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
       setUpdatedProduct(product);
       fetchExistingImages(product.id);
     }
-  }, [product]);
+    setNewImages([]); // Clear new images when editing a product
+  }, [product, open]);
 
   // Fetch existing images from the product_images table
   const fetchExistingImages = async (productId: string) => {
     console.log("Fetching images for product ID:", productId);
-  
+
     const { data, error } = await supabase
       .from("product_images")
       .select("*")
       .eq("product_id", productId);
-  
+
     if (error) {
       console.error("Error fetching images:", error);
     } else {
-      console.log("Fetched images:", data); // ✅ Debugging
+      console.log("Fetched images:", data);
       setExistingImages(data || []);
-  
+
+      // Check if there's a primary image
       const primary = data.find((img) => img.is_primary);
-      setPrimaryImage(primary ? primary.image_url : null);
+      setPrimaryImage(primary ? primary.image_url : null); // Set the first primary or null if no primary
     }
-  };  
+  };
 
   // Handle file drop for new image uploads
   const onDrop = (acceptedFiles: File[]) => {
@@ -63,7 +65,7 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
         const { data } = supabase.storage.from("product-images").getPublicUrl(filePath);
         uploadedUrls.push({
           url: data.publicUrl,
-          isPrimary: primaryImage === file.name,
+          isPrimary: primaryImage === file.name, // Set as primary if selected
         });
       }
     }
@@ -79,27 +81,100 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
       return;
     }
 
-    // Update product details
-    await supabase
-      .from("products")
-      .update({ ...updatedProduct })
-      .eq("id", product.id);
+    try {
+      // Update product details
+      await supabase
+        .from("products")
+        .update({ ...updatedProduct })
+        .eq("id", product.id);
 
-    // Upload new images and associate them with the product
-    const uploadedImages = await uploadImages(product.id);
+      // Upload new images and associate them with the product
+      const uploadedImages = await uploadImages(product.id);
 
-    for (const img of uploadedImages) {
-      await supabase.from("product_images").insert([
-        {
-          product_id: product.id,
-          image_url: img.url,
-          is_primary: img.isPrimary,
-        },
-      ]);
+      for (const img of uploadedImages) {
+        await supabase.from("product_images").insert([
+          {
+            product_id: product.id,
+            image_url: img.url,
+            is_primary: img.isPrimary,
+          },
+        ]);
+      }
+
+      // Re-fetch the images to ensure the primary image is updated in the UI
+      fetchExistingImages(product.id);
+
+      // Clear the newImages state to reset the uploaded images section
+      setNewImages([]);
+      fetchProducts();
+      onClose();
+    } catch (error) {
+      console.error("Error during product update:", error);
     }
+  };
 
-    fetchProducts();
-    onClose();
+  // Handle delete image
+  const handleDeleteImage = async (imageId: string, imageUrl: string) => {
+    try {
+      // Delete the image from Supabase Storage
+      const filePath = imageUrl.split("/storage/v1/object/public/")[1];
+      const { error: storageError } = await supabase.storage
+        .from("product-images")
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Error deleting image from storage:", storageError);
+        return;
+      }
+
+      // Delete the image record from the database
+      const { error: dbError } = await supabase
+        .from("product_images")
+        .delete()
+        .eq("id", imageId);
+
+      if (dbError) {
+        console.error("Error deleting image from database:", dbError);
+        return;
+      }
+
+      // Update the state to remove the deleted image from the UI
+      setExistingImages(existingImages.filter((img) => img.id !== imageId));
+    } catch (error) {
+      console.error("Error during image deletion:", error);
+    }
+  };
+
+  // Set the primary image
+  const handleSetPrimary = async (img: any) => {
+    try {
+      // 1. Unset all other images to not be primary
+      const { error: unsetError } = await supabase
+        .from("product_images")
+        .update({ is_primary: false }) // Unset primary for all images
+        .eq("product_id", product.id);
+
+      if (unsetError) {
+        console.error("Error unsetting primary image:", unsetError);
+        return;
+      }
+
+      // 2. Set the selected image to be primary
+      const { error: setError } = await supabase
+        .from("product_images")
+        .update({ is_primary: true }) // Set primary for the selected image
+        .eq("id", img.id); // Correctly reference the image by `id`
+
+      if (setError) {
+        console.error("Error setting primary image:", setError);
+        return;
+      }
+
+      // 3. Update the state with the new primary image URL
+      setPrimaryImage(img.image_url); // Ensure UI updates immediately
+    } catch (error) {
+      console.error("Error during image primary set:", error);
+    }
   };
 
   return (
@@ -136,9 +211,16 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
                 className={`absolute top-1 right-1 text-xs px-2 py-1 rounded ${
                   primaryImage === img.image_url ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
                 }`}
-                onClick={() => setPrimaryImage(img.image_url)}
+                onClick={() => handleSetPrimary(img)}
               >
                 {primaryImage === img.image_url ? "Primary" : "Set Primary"}
+              </button>
+              {/* Delete Button */}
+              <button
+                className="absolute bottom-1 right-1 text-xs px-2 py-1 rounded bg-red-500 text-white"
+                onClick={() => handleDeleteImage(img.id, img.image_url)}
+              >
+                Delete
               </button>
             </div>
           ))}

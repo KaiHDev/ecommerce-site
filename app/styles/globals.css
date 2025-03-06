@@ -19,3 +19,21 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Remove blue outline on selected cells */
+.MuiDataGrid-cell.Mui-selected {
+  outline: none !important;
+}
+
+/* Remove blue outline on selected column headers */
+.MuiDataGrid-columnHeader.Mui-selected {
+  outline: none !important;
+}
+
+/* Ensure the checkbox does not have the blue outline */
+.MuiCheckbox-root.Mui-checked {
+  outline: none !important;
+}
+.MuiDataGrid-cell:focus-within {
+  outline: none !important;
+}
