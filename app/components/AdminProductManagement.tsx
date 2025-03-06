@@ -29,10 +29,34 @@ const AdminProductManagement = () => {
 
   // Fetch products from Supabase
   const fetchProducts = async () => {
-    const { data, error } = await supabase.from('products').select('*');
-    if (error) console.error('Error fetching products:', error);
-    else setProducts(data || []);
-  };
+    const { data, error } = await supabase
+      .from("products")
+      .select(`
+        *,
+        product_images (
+          image_url,
+          is_primary
+        )
+      `);
+  
+    if (error) {
+      console.error("Error fetching products:", error);
+      return;
+    }
+  
+    // Attach the primary image URL directly to the product object
+    const productsWithPrimaryImage = data.map((product: any) => {
+      const primaryImage = product.product_images.find(
+        (img: any) => img.is_primary
+      );
+      return {
+        ...product,
+        primary_image_url: primaryImage ? primaryImage.image_url : null,
+      };
+    });
+  
+    setProducts(productsWithPrimaryImage);
+  };  
 
   useEffect(() => {
     fetchProducts();

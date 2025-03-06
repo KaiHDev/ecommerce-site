@@ -14,7 +14,7 @@ type Product = {
   name: string;
   price: number;
   sku: string;
-  image_url?: string;
+  primary_image_url?: string;
 };
 
 const HomePage = () => {
@@ -37,7 +37,7 @@ const HomePage = () => {
           )
         `)
         .limit(4);
-  
+
       if (error) {
         console.error("Error fetching products:", error.message);
       } else {
@@ -53,18 +53,18 @@ const HomePage = () => {
             primary_image_url: primaryImage?.image_url || "",
           };
         });
-  
+
         setProducts(productsWithPrimaryImage);
       }
       setLoading(false);
     };
-  
+
     fetchProducts();
-  }, []);  
+  }, []);
 
   const handleAddToBasket = (product: Product) => {
-    console.log("Added to basket:", product);
-    // TODO: Integrate with your basket/cart system here
+    // Handle adding product to basket here
+    console.log("Product added to basket:", product);
   };
 
   return (
@@ -76,7 +76,7 @@ const HomePage = () => {
           <ProductCard
             key={product.id}
             product={product}
-            onAddToBasket={handleAddToBasket}
+            onAddToBasket={handleAddToBasket} // Pass the function to ProductCard
           />
         ))}
       </div>

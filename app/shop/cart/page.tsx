@@ -2,13 +2,14 @@
 
 import React from "react";
 import { Button, IconButton } from "@mui/material";
-import { Add, Remove } from "@mui/icons-material";
+import { Add, Remove, Close } from "@mui/icons-material"; // Added Close icon
 import { useCartStore } from "@/lib/useCartStore";
 
 export default function CartPage() {
   const cartItems = useCartStore((state) => state.cartItems);
   const increaseQuantity = useCartStore((state) => state.increaseQuantity);
   const decreaseQuantity = useCartStore((state) => state.decreaseQuantity);
+  const removeFromCart = useCartStore((state) => state.removeFromCart); // Function to remove items
 
   const getTotal = () =>
     cartItems.reduce((total, item) => total + item.price * (item.quantity || 1), 0);
@@ -58,6 +59,15 @@ export default function CartPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Remove Item Button */}
+              <IconButton
+                size="small"
+                color="secondary"
+                onClick={() => removeFromCart(item.id)}
+              >
+                <Close fontSize="small" />
+              </IconButton>
 
               {/* Product Total Price */}
               <div className="font-medium">
