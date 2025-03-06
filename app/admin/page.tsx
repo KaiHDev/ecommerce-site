@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AdminProductManagement from "@/app/components/AdminProductManagement";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const AdminPage = () => {
   const router = useRouter();
@@ -15,7 +16,7 @@ const AdminPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        router.replace("/admin/login"); // Redirects unauthorized users to /admin/login
+        router.replace("/admin/login"); // Redirect unauthorized users
       } else {
         setIsAuthenticated(true);
       }
@@ -26,7 +27,7 @@ const AdminPage = () => {
     checkAuth();
   }, [router]);
 
-  if (loading) return <p className="text-center text-white">Loading...</p>;
+  if (loading) return <LoadingSpinner />; // Full screen spinner
 
   return isAuthenticated ? <AdminProductManagement /> : null;
 };
