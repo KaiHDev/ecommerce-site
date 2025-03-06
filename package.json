@@ -14,11 +14,15 @@
     "@mui/icons-material": "^6.4.5",
     "@mui/material": "^6.4.5",
     "@mui/x-data-grid": "^7.27.1",
+    "@stripe/react-stripe-js": "^3.3.0",
+    "@stripe/stripe-js": "^5.9.2",
     "@supabase/supabase-js": "^2.49.1",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-dropzone": "^14.3.8"
+    "react-dropzone": "^14.3.8",
+    "stripe": "^17.7.0",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
