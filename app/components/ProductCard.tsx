@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardActions, CardContent, CardMedia, Button, Typography } from "@mui/material";
+import { useCartStore } from "@/lib/useCartStore";
 
 type Product = {
   id: string;
@@ -13,10 +14,18 @@ type Product = {
 
 type ProductCardProps = {
   product: Product;
-  onAddToBasket: (product: Product) => void;
 };
 
-const ProductCard = ({ product, onAddToBasket }: ProductCardProps) => {
+const ProductCard = ({ product }: ProductCardProps) => {
+  const addToCart = useCartStore((state) => state.addToCart);
+  const [added, setAdded] = useState(false);
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1000); // Reset after 1 seconds
+  };
+
   return (
     <Card className="w-full h-full flex flex-col">
       {product.primary_image_url && (
@@ -38,15 +47,21 @@ const ProductCard = ({ product, onAddToBasket }: ProductCardProps) => {
           £{product.price.toFixed(2)}
         </Typography>
       </CardContent>
-      <CardActions>
+      <CardActions className="flex flex-col items-start">
         <Button
           size="small"
           variant="contained"
-          color="primary"
-          onClick={() => onAddToBasket(product)}
+          color={added ? "success" : "primary"}
+          onClick={handleAddToCart}
+          disabled={added}
         >
-          Add to Basket
+          {added ? "Added" : "Add to Basket"}
         </Button>
+        {added && (
+          <Typography variant="caption" color="success.main" className="mt-1">
+            Product added to cart!
+          </Typography>
+        )}
       </CardActions>
     </Card>
   );
