@@ -1,75 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+import React from "react";
+import Link from "next/link";
+import { ShoppingCart } from "@mui/icons-material";
 
 const Header = () => {
-  const [user, setUser] = useState<any>(null);
-  const router = useRouter();
-
-  useEffect(() => {
-    // Listen for auth state changes and update UI dynamically
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-    });
-
-    // Fetch initial user session
-    const fetchUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-    };
-
-    fetchUser();
-
-    return () => {
-      authListener.subscription?.unsubscribe();
-    };
-  }, []);
-
-  const handleDashboard = async () => {
-    router.push("/admin"); // Redirect to admin page
-  };
-
-  const handleSignIn = () => {
-    router.push("/admin/login"); // Redirect to login page when "Sign In" is clicked
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    router.push("/admin/login"); // Redirect to login after logout
-  };
-
   return (
-    <nav className="bg-gray-800 p-4 flex justify-between items-center shadow-md">
-      <h1 className="text-white text-2xl font-semibold cursor-pointer" onClick={() => router.push("/")}>
-        E-Commerce Admin
-      </h1>
-      <div>
-        {user ? (
-          <div>
-            <button 
-              onClick={handleDashboard}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-all mr-3">Dashboard
-            </button>
-            <button
-              onClick={handleSignOut}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition-all"
-            >
-              Log Out
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleSignIn}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-all"
-          >
-            Sign In
-          </button>
-        )}
+    <header className="w-full bg-white shadow-md py-4 px-6 flex justify-between items-center">
+      
+      {/* Logo on the left */}
+      <Link href="/" className="text-2xl font-bold text-gray-800">
+        My Store
+      </Link>
+
+      {/* Navigation + Cart aligned to the right */}
+      <div className="flex items-center space-x-6">
+        <nav className="flex space-x-6">
+          <Link href="/shop" className="text-gray-600 hover:text-black">
+            Shop
+          </Link>
+          <Link href="/about" className="text-gray-600 hover:text-black">
+            About
+          </Link>
+          <Link href="/contact" className="text-gray-600 hover:text-black">
+            Contact
+          </Link>
+        </nav>
+
+        {/* Cart Icon */}
+        <Link href="/cart" className="text-gray-600 hover:text-black relative">
+          <ShoppingCart fontSize="large" />
+          {/* Optional cart count badge */}
+          {/* <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
+            3
+          </span> */}
+        </Link>
       </div>
-    </nav>
+    </header>
   );
 };
 
