@@ -5,13 +5,13 @@ import Image from "next/image";
 
 const FeatureSection = () => {
   return (
-    <section className="py-12 bg-white">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-8 px-4">
+    <section className="py-12">
+      <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center gap-8 px-4">
         
         {/* Image */}
         <div className="w-full md:w-1/2">
           <Image
-            src="/images/product-feature.jpg"
+            src="/images/HeroSection.jpg"
             alt="Product Feature"
             width={600}
             height={400}

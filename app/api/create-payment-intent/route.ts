@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe expects pence
+      amount: Math.round(amount * 100),
       currency: "gbp",
       payment_method_types: ["card"],
     });

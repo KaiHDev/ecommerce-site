@@ -23,62 +23,45 @@ const HomePage = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      setLoading(true);
       const { data, error } = await supabase
         .from("products")
         .select(`
-          id,
-          name,
-          price,
-          sku,
-          product_images (
-            image_url,
-            is_primary
-          )
+          id, name, price, sku, slug, description,
+          product_images(image_url, image_order)
         `)
+        .order("created_at", { ascending: false })
         .limit(4);
-
+  
       if (error) {
         console.error("Error fetching products:", error.message);
-      } else {
-        const productsWithPrimaryImage = (data as any[]).map((product) => {
-          const primaryImage = product.product_images?.find(
-            (img: any) => img.is_primary
-          );
-          return {
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            sku: product.sku,
-            primary_image_url: primaryImage?.image_url || "",
-          };
-        });
-
-        setProducts(productsWithPrimaryImage);
+        return;
       }
-      setLoading(false);
+      
+      const productsWithPrimaryImages = data.map((product: any) => {
+        const sortedImages = product.product_images.sort(
+          (a: any, b: any) => a.image_order - b.image_order
+        );
+        return {
+          ...product,
+          primary_image_url: sortedImages[0]?.image_url || "/images/Placeholder.jpg",
+        };
+      });
+  
+      setProducts(productsWithPrimaryImages);
     };
-
+  
     fetchProducts();
-  }, []);
-
-  const handleAddToBasket = (product: Product) => {
-    // Handle adding product to basket here
-    console.log("Product added to basket:", product);
-  };
+  }, []);  
 
   return (
     <div className="relative">
-      {loading && <LoadingSpinner />}
       <HeroSection />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onAddToBasket={handleAddToBasket} // Pass the function to ProductCard
-          />
-        ))}
+      <div className="max-w-screen-xl mx-auto px-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-10">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
       </div>
       <FeatureSection />
       <TestimonialsSection />

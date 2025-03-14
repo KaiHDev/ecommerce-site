@@ -1,120 +1,152 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from "@mui/material";
-import { useDropzone } from "react-dropzone";
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, IconButton } from '@mui/material';
+import { useDropzone } from 'react-dropzone';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import CloseIcon from '@mui/icons-material/Close';
+
+type ImagePreview = {
+  id: string;
+  image_url: string;
+  image_order: number;
+};
 
 const AddProductDialog = ({ open, onClose, fetchProducts }: any) => {
-  const [product, setProduct] = useState({ name: "", price: "", sku: "" });
+  const [product, setProduct] = useState({ name: '', price: '', sku: '', description: '' });
   const [images, setImages] = useState<File[]>([]);
-  const [primaryImage, setPrimaryImage] = useState<File | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Handle file drop for image uploads
-  const onDrop = (acceptedFiles: File[]) => {
-    setImages([...images, ...acceptedFiles]);
-  };
-
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    accept: { "image/*": [] },
-    multiple: true,
+  const [errors, setErrors] = useState({
+    name: '',
+    price: '',
+    sku: '',
+    description: '',
+    images: '',
   });
 
-  // Upload images to Supabase Storage and return their URLs
-  const uploadImages = async (productId: string) => {
-    setUploading(true);
-    let uploadedUrls: { url: string; isPrimary: boolean }[] = [];
-  
-    for (const file of images) {
-      const filePath = `products/${productId}-${Date.now()}-${file.name}`;
-  
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(filePath, file, { cacheControl: "3600", upsert: false });
-  
-      if (error) {
-        console.error("Error uploading image:", error);
-      } else {
-        const { data } = supabase.storage.from("product-images").getPublicUrl(filePath);
-        const publicUrl = data?.publicUrl || "";
-  
-        uploadedUrls.push({
-          url: publicUrl,
-          isPrimary: primaryImage === file,
-        });
-      }
+  useEffect(() => {
+    if (!open) {
+      resetForm();
     }
-  
-    setUploading(false);
-    return uploadedUrls;
-  };  
+  }, [open]);
 
-  // Handle product submission
-  const handleAddProduct = async () => {
-    if (!product.name || !product.sku || !product.price || images.length === 0) {
-      alert("Please fill all fields and add at least one image.");
-      return;
-    }
-
-    // Insert product into `products` table and get its ID
-    const { data: productData, error: productError } = await supabase
-      .from("products")
-      .insert([{ name: product.name, price: parseFloat(product.price), sku: product.sku }])
-      .select("id")
-      .single();
-
-    if (productError) {
-      console.error("Error adding product:", productError);
-      return;
-    }
-
-    const productId = productData.id;
-
-    // Upload images to storage
-    const uploadedImages = await uploadImages(productId);
-    console.log("Uploaded Images:", uploadedImages);
-
-    if (uploadedImages.length === 0) {
-      console.error("No images uploaded. Skipping database insert.");
-      return;
-    }
-
-    // Insert images into `product_images` table with the correct `product_id`
-    for (const img of uploadedImages) {
-      const { error: imageInsertError } = await supabase.from("product_images").insert([
-        {
-          product_id: productId,
-          image_url: img.url,
-          is_primary: img.isPrimary,
-        },
-      ]);
-
-      if (imageInsertError) {
-        console.error("Error inserting image into database:", imageInsertError);
-      }
-    }
-
-    fetchProducts();
-    resetForm();
-    onClose();
+  const resetForm = () => {
+    setProduct({ name: '', price: '', sku: '', description: '' });
+    setImages([]);
+    setImagePreviews([]);
+    setErrors({ name: '', price: '', sku: '', description: '', images: '' });
   };
 
-  // Reset form fields and images after submission
-  const resetForm = () => {
-    setProduct({ name: "", price: "", sku: "" });
-    setImages([]);
-    setPrimaryImage(null);
+  const validateFields = () => {
+    const newErrors = {
+      name: product.name ? '' : 'Please enter a product name.',
+      price: product.price ? '' : 'Please enter a price.',
+      sku: product.sku ? '' : 'Please enter a SKU.',
+      description: product.description ? '' : 'Please enter a description.',
+      images: images.length > 0 ? '' : 'Please add at least one image.',
+    };
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(Boolean);
+  };
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const newEntries = acceptedFiles.map((file, idx) => ({
+      id: `new-${Date.now()}-${idx}`,
+      image_url: URL.createObjectURL(file),
+      image_order: imagePreviews.length + idx + 1,
+    }));
+
+    setImages([...images, ...acceptedFiles]);
+    setImagePreviews([...imagePreviews, ...newEntries]);
+    setErrors((prev) => ({ ...prev, images: '' }));
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'image/*': [] } });
+
+  const handleRemoveImage = (id: string) => {
+    setImages(images.filter((_, idx) => imagePreviews[idx].id !== id));
+    setImagePreviews(imagePreviews.filter((img) => img.id !== id));
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const reordered = Array.from(imagePreviews);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setImagePreviews(reordered.map((img, idx) => ({ ...img, image_order: idx + 1 })));
+  };
+
+  const handleAddProduct = async () => {
+    if (!validateFields()) return;
+
+    setUploading(true);
+
+    try {
+      const baseSlug = product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+      let slug = baseSlug, count = 1;
+      while (true) {
+        const { data: existing } = await supabase.from('products').select('id').eq('slug', slug);
+        if (!existing || existing.length === 0) break;
+        slug = `${baseSlug}-${count++}`;
+      }
+
+      const { data: newProduct, error: productError } = await supabase
+        .from('products')
+        .insert({
+          name: product.name,
+          price: parseFloat(product.price),
+          sku: product.sku,
+          description: product.description,
+          slug,
+        })
+        .select('id')
+        .single();
+
+      if (productError || !newProduct) {
+        throw new Error(productError?.message || 'Product creation failed.');
+      }
+
+      const uploadedImages = [];
+      for (const [idx, file] of images.entries()) {
+        const filePath = `products/${newProduct.id}-${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage.from('product-images').upload(filePath, file);
+        if (error) {
+          console.error('Upload error:', error.message);
+          continue;
+        }
+        const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
+        uploadedImages.push({
+          product_id: newProduct.id,
+          image_url: data.publicUrl,
+          image_order: imagePreviews[idx].image_order,
+        });
+      }
+
+      await supabase.from('product_images').insert(uploadedImages);
+
+      fetchProducts();
+      resetForm();
+      onClose();
+    } catch (error: any) {
+      console.error('Error adding product:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Add New Product</DialogTitle>
       <DialogContent className="flex flex-col space-y-4">
         <TextField
           label="Product Name"
           value={product.name}
+          error={Boolean(errors.name)}
+          helperText={errors.name}
           onChange={(e) => setProduct({ ...product, name: e.target.value })}
           fullWidth
         />
@@ -122,48 +154,97 @@ const AddProductDialog = ({ open, onClose, fetchProducts }: any) => {
           label="Price"
           type="number"
           value={product.price}
+          error={Boolean(errors.price)}
+          helperText={errors.price}
           onChange={(e) => setProduct({ ...product, price: e.target.value })}
           fullWidth
         />
         <TextField
           label="SKU"
           value={product.sku}
+          error={Boolean(errors.sku)}
+          helperText={errors.sku}
           onChange={(e) => setProduct({ ...product, sku: e.target.value })}
           fullWidth
         />
+        <TextField
+          label="Description"
+          multiline
+          minRows={4}
+          value={product.description}
+          error={Boolean(errors.description)}
+          helperText={errors.description}
+          onChange={(e) => setProduct({ ...product, description: e.target.value })}
+          fullWidth
+        />
 
-        {/* Drag & Drop File Upload */}
         <div {...getRootProps()} className="border-2 border-dashed p-4 text-center cursor-pointer">
           <input {...getInputProps()} />
-          <p>Drag & drop images here, or click to select</p>
+          <p>Drag & drop images or click to select</p>
+          {errors.images && <p className="text-red-500 text-sm mt-2">{errors.images}</p>}
         </div>
 
-        {/* Image Preview */}
-        {images.length > 0 && (
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {images.map((file, index) => (
-              <div key={index} className="relative border p-2">
-                <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-auto rounded" />
-                <button
-                  className={`absolute top-1 right-1 text-xs px-2 py-1 rounded ${
-                    primaryImage === file ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
-                  }`}
-                  onClick={() => setPrimaryImage(file)}
-                >
-                  {primaryImage === file ? "Primary" : "Set Primary"}
-                </button>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="images" direction="horizontal">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps} className="mt-2 grid grid-cols-3 gap-4">
+                {imagePreviews.map((img, index) => (
+                  <Draggable key={img.id} draggableId={img.id} index={index}>
+                    {(provided) => (
+                      <div 
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="relative border p-2 rounded shadow overflow-hidden"
+                      >
+                        <img 
+                          src={img.image_url} 
+                          alt={`Preview ${index}`} 
+                          className="w-full h-auto rounded" 
+                        />
+
+                        <IconButton
+                          size="small"
+                          style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(255,0,0,0.8)', color: 'white' }}
+                          onClick={() => handleRemoveImage(img.id)}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
               </div>
-            ))}
-          </div>
-        )}
+            )}
+          </Droppable>
+        </DragDropContext>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Cancel
+        <Button 
+          onClick={onClose} 
+          variant="contained"
+          sx={{
+            backgroundColor: "#EF4444",
+            "&:hover": {
+              backgroundColor: "#DC2626",
+            },
+          }}
+          className="text-white">
+            Cancel
         </Button>
-        <Button onClick={handleAddProduct} color="secondary" disabled={uploading}>
-          {uploading ? "Uploading..." : "Add Product"}
+        <Button 
+          onClick={handleAddProduct} 
+          disabled={uploading} 
+          variant="contained"
+          sx={{
+            backgroundColor: "#1E40AF",
+            "&:hover": {
+              backgroundColor: "#F59E0B",
+            },
+          }}>
+          {uploading ? 'Uploading...' : 'Add Product'}
         </Button>
       </DialogActions>
     </Dialog>

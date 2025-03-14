@@ -14,7 +14,7 @@ const AdminGuard = ({ children }: { children: React.ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push('/login'); // Redirect to login page if not authenticated
+        router.push('/login');
       } else {
         setIsAuthenticated(true);
       }

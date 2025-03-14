@@ -9,7 +9,7 @@ const AddProductButton: React.FC<AddProductButtonProps> = ({ onClick }) => (
   <Button
     variant="contained"
     color="primary"
-    className="bg-blue-500 hover:bg-blue-700 text-white mb-4"
+    className="bg-primary hover:bg-accent bg-shadow-md text-white py-2 rounded"
     onClick={onClick}
   >
     Add Product

@@ -1,261 +1,238 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from "@mui/material";
-import { useDropzone } from "react-dropzone";
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, IconButton } from '@mui/material';
+import { useDropzone } from 'react-dropzone';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import CloseIcon from '@mui/icons-material/Close';
+
+type ImageType = {
+  id: string;
+  image_url: string;
+  image_order: number;
+};
 
 const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
-  const [updatedProduct, setUpdatedProduct] = useState(product || { name: "", price: "", sku: "" });
-  const [existingImages, setExistingImages] = useState<{ id: string; image_url: string; is_primary: boolean }[]>([]);
+  const [updatedProduct, setUpdatedProduct] = useState({ name: '', price: '', sku: '', description: '' });
+  const [existingImages, setExistingImages] = useState<ImageType[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
-  const [primaryImage, setPrimaryImage] = useState<string | null>(null); // Tracks the primary image URL
+  const [deletedImages, setDeletedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (product) {
-      setUpdatedProduct(product);
-      fetchExistingImages(product.id);
-    }
-    setNewImages([]); // Clear new images when editing a product
-  }, [product, open]);
-
-  // Fetch existing images from the product_images table
-  const fetchExistingImages = async (productId: string) => {
-    console.log("Fetching images for product ID:", productId);
-
-    const { data, error } = await supabase
-      .from("product_images")
-      .select("*")
-      .eq("product_id", productId);
-
-    if (error) {
-      console.error("Error fetching images:", error);
-    } else {
-      console.log("Fetched images:", data);
-      setExistingImages(data || []);
-
-      // Check if there's a primary image
-      const primary = data.find((img) => img.is_primary);
-      setPrimaryImage(primary ? primary.image_url : null); // Set the first primary or null if no primary
-    }
-  };
-
-  // Handle file drop for new image uploads
-  const onDrop = (acceptedFiles: File[]) => {
-    setNewImages([...newImages, ...acceptedFiles]);
-  };
-
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    accept: { "image/*": [] },
-    multiple: true,
+  const [errors, setErrors] = useState({
+    name: '',
+    price: '',
+    sku: '',
+    description: '',
+    images: '',
   });
 
-  // Upload new images to Supabase Storage and return their URLs
-  const uploadImages = async (productId: string) => {
-    setUploading(true);
-    let uploadedUrls: { url: string; isPrimary: boolean }[] = [];
-
-    for (const file of newImages) {
-      const filePath = `products/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("product-images").upload(filePath, file);
-
-      if (!error) {
-        const { data } = supabase.storage.from("product-images").getPublicUrl(filePath);
-        uploadedUrls.push({
-          url: data.publicUrl,
-          isPrimary: primaryImage === file.name, // Set as primary if selected
-        });
-      }
+  useEffect(() => {
+    if (product && open) {
+      console.log('Product data on edit:', product);
+      setUpdatedProduct({
+        name: product.name,
+        price: product.price,
+        sku: product.sku,
+        description: product.description || '',
+      });
+      fetchExistingImages(product.id);
+      setNewImages([]);
+      setDeletedImages([]);
+      setErrors({ name: '', price: '', sku: '', description: '', images: '' });
     }
+  }, [product, open]);
 
-    setUploading(false);
-    return uploadedUrls;
+  const fetchExistingImages = async (productId: string) => {
+    const { data } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', productId)
+      .order('image_order', { ascending: true });
+    setExistingImages(data || []);
   };
 
-  // Handle product update
+  const validateFields = () => {
+    const newErrors = {
+      name: updatedProduct.name ? '' : 'Please enter a product name.',
+      price: updatedProduct.price ? '' : 'Please enter a price.',
+      sku: updatedProduct.sku ? '' : 'Please enter a SKU.',
+      description: updatedProduct.description ? '' : 'Please enter a description.',
+      images: existingImages.length > 0 ? '' : 'Please add at least one image.',
+    };
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(Boolean);
+  };
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const newEntries = acceptedFiles.map((file, idx) => ({
+      id: `new-${Date.now()}-${idx}`,
+      image_url: URL.createObjectURL(file),
+      image_order: existingImages.length + idx + 1,
+    }));
+
+    setNewImages([...newImages, ...acceptedFiles]);
+    setExistingImages([...existingImages, ...newEntries]);
+    setErrors(prev => ({ ...prev, images: '' }));
+  };
+
+  const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: { 'image/*': [] } });
+
+  const handleRemoveImage = (id: string) => {
+    if (!id.startsWith('new-')) setDeletedImages([...deletedImages, id]);
+    setExistingImages(existingImages.filter(img => img.id !== id));
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const reordered = Array.from(existingImages);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setExistingImages(reordered.map((img, idx) => ({ ...img, image_order: idx + 1 })));
+  };
+
   const handleUpdateProduct = async () => {
-    if (!updatedProduct.name || !updatedProduct.sku || !updatedProduct.price) {
-      alert("Please fill in all required fields.");
-      return;
-    }
+    if (!validateFields()) return;
+    setUploading(true);
 
     try {
       // Update product details
-      await supabase
-        .from("products")
-        .update({ ...updatedProduct })
-        .eq("id", product.id);
+      await supabase.from('products').update({
+        name: updatedProduct.name,
+        price: parseFloat(updatedProduct.price),
+        sku: updatedProduct.sku,
+        description: updatedProduct.description,
+      }).eq('id', product.id);
 
-      // Upload new images and associate them with the product
-      const uploadedImages = await uploadImages(product.id);
-
-      for (const img of uploadedImages) {
-        await supabase.from("product_images").insert([
-          {
-            product_id: product.id,
-            image_url: img.url,
-            is_primary: img.isPrimary,
-          },
-        ]);
+      // Delete removed images
+      if (deletedImages.length) {
+        await supabase.from('product_images').delete().in('id', deletedImages);
       }
 
-      // Re-fetch the images to ensure the primary image is updated in the UI
-      fetchExistingImages(product.id);
+      // Update existing image orders
+      for (const img of existingImages.filter(img => !img.id.startsWith('new-'))) {
+        await supabase.from('product_images').update({ image_order: img.image_order }).eq('id', img.id);
+      }
 
-      // Clear the newImages state to reset the uploaded images section
-      setNewImages([]);
+      // Upload new images & insert records
+      for (const [idx, file] of newImages.entries()) {
+        const filePath = `products/${product.id}-${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage.from('product-images').upload(filePath, file);
+        if (error) {
+          console.error('Upload error:', error.message);
+          continue;
+        }
+        const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
+        await supabase.from('product_images').insert({
+          product_id: product.id,
+          image_url: data.publicUrl,
+          image_order: existingImages.find(img => img.id.startsWith('new-'))!.image_order + idx,
+        });
+      }
+
       fetchProducts();
       onClose();
-    } catch (error) {
-      console.error("Error during product update:", error);
-    }
-  };
-
-  // Handle delete image
-  const handleDeleteImage = async (imageId: string, imageUrl: string) => {
-    try {
-      // Delete the image from Supabase Storage
-      const filePath = imageUrl.split("/storage/v1/object/public/")[1];
-      const { error: storageError } = await supabase.storage
-        .from("product-images")
-        .remove([filePath]);
-
-      if (storageError) {
-        console.error("Error deleting image from storage:", storageError);
-        return;
-      }
-
-      // Delete the image record from the database
-      const { error: dbError } = await supabase
-        .from("product_images")
-        .delete()
-        .eq("id", imageId);
-
-      if (dbError) {
-        console.error("Error deleting image from database:", dbError);
-        return;
-      }
-
-      // Update the state to remove the deleted image from the UI
-      setExistingImages(existingImages.filter((img) => img.id !== imageId));
-    } catch (error) {
-      console.error("Error during image deletion:", error);
-    }
-  };
-
-  // Set the primary image
-  const handleSetPrimary = async (img: any) => {
-    try {
-      // 1. Unset all other images to not be primary
-      const { error: unsetError } = await supabase
-        .from("product_images")
-        .update({ is_primary: false }) // Unset primary for all images
-        .eq("product_id", product.id);
-
-      if (unsetError) {
-        console.error("Error unsetting primary image:", unsetError);
-        return;
-      }
-
-      // 2. Set the selected image to be primary
-      const { error: setError } = await supabase
-        .from("product_images")
-        .update({ is_primary: true }) // Set primary for the selected image
-        .eq("id", img.id); // Correctly reference the image by `id`
-
-      if (setError) {
-        console.error("Error setting primary image:", setError);
-        return;
-      }
-
-      // 3. Update the state with the new primary image URL
-      setPrimaryImage(img.image_url); // Ensure UI updates immediately
-    } catch (error) {
-      console.error("Error during image primary set:", error);
+    } catch (error: any) {
+      alert(`Error updating product: ${error.message}`);
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>Edit Product</DialogTitle>
-      <DialogContent className="flex flex-col space-y-4">
+      <DialogContent className="space-y-4">
+        <TextField label="Product Name" value={updatedProduct.name}
+          error={Boolean(errors.name)} helperText={errors.name}
+          onChange={(e) => setUpdatedProduct({ ...updatedProduct, name: e.target.value })} fullWidth />
+
+        <TextField label="Price" type="number" value={updatedProduct.price}
+          error={Boolean(errors.price)} helperText={errors.price}
+          onChange={(e) => setUpdatedProduct({ ...updatedProduct, price: e.target.value })} fullWidth />
+
+        <TextField label="SKU" value={updatedProduct.sku}
+          error={Boolean(errors.sku)} helperText={errors.sku}
+          onChange={(e) => setUpdatedProduct({ ...updatedProduct, sku: e.target.value })} fullWidth />
+
         <TextField
-          label="Product Name"
-          value={updatedProduct.name}
-          onChange={(e) => setUpdatedProduct({ ...updatedProduct, name: e.target.value })}
-          fullWidth
-        />
-        <TextField
-          label="Price"
-          type="number"
-          value={updatedProduct.price}
-          onChange={(e) => setUpdatedProduct({ ...updatedProduct, price: e.target.value })}
-          fullWidth
-        />
-        <TextField
-          label="SKU"
-          value={updatedProduct.sku}
-          onChange={(e) => setUpdatedProduct({ ...updatedProduct, sku: e.target.value })}
+          label="Description"
+          multiline
+          minRows={4}
+          value={updatedProduct.description}
+          error={Boolean(errors.description)}
+          helperText={errors.description}
+          onChange={(e) => setUpdatedProduct({ ...updatedProduct, description: e.target.value })}
           fullWidth
         />
 
-        {/* Existing Images */}
-        <h3 className="text-lg font-semibold mt-2">Existing Images</h3>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {existingImages.map((img) => (
-            <div key={img.id} className="relative border p-2">
-              <img src={img.image_url} alt="Existing" className="w-full h-auto rounded" />
-              <button
-                className={`absolute top-1 right-1 text-xs px-2 py-1 rounded ${
-                  primaryImage === img.image_url ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
-                }`}
-                onClick={() => handleSetPrimary(img)}
-              >
-                {primaryImage === img.image_url ? "Primary" : "Set Primary"}
-              </button>
-              {/* Delete Button */}
-              <button
-                className="absolute bottom-1 right-1 text-xs px-2 py-1 rounded bg-red-500 text-white"
-                onClick={() => handleDeleteImage(img.id, img.image_url)}
-              >
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Drag & Drop New Image Upload */}
-        <h3 className="text-lg font-semibold mt-2">Upload New Images</h3>
         <div {...getRootProps()} className="border-2 border-dashed p-4 text-center cursor-pointer">
           <input {...getInputProps()} />
-          <p>Drag & drop new images here, or click to select</p>
+          <p>Drag & drop images or click to select</p>
+          {errors.images && <p className="text-red-500 text-sm mt-2">{errors.images}</p>}
         </div>
 
-        {/* New Images Preview */}
-        {newImages.length > 0 && (
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {newImages.map((file, index) => (
-              <div key={index} className="relative border p-2">
-                <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-auto rounded" />
-                <button
-                  className={`absolute top-1 right-1 text-xs px-2 py-1 rounded ${
-                    primaryImage === file.name ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
-                  }`}
-                  onClick={() => setPrimaryImage(file.name)}
-                >
-                  {primaryImage === file.name ? "Primary" : "Set Primary"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </DialogContent>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="images" direction="horizontal">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-3 gap-4">
+                {existingImages.map((img, index) => (
+                  <Draggable key={img.id} draggableId={img.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="relative border p-2 rounded shadow overflow-hidden"
+                      >
+                        <img
+                          src={img.image_url}
+                          alt={`Image ${index}`}
+                          className="w-full h-auto rounded"
+                        />
 
+                        <IconButton
+                          size="small"
+                          style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(255,0,0,0.8)', color: 'white' }}
+                          onClick={() => handleRemoveImage(img.id)}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="primary">Cancel</Button>
-        <Button onClick={handleUpdateProduct} color="secondary">Save Changes</Button>
+        <Button 
+          onClick={onClose}
+          variant="contained"
+          sx={{
+            backgroundColor: "#EF4444",
+            "&:hover": {
+              backgroundColor: "#DC2626",
+            },
+          }}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleUpdateProduct} 
+          disabled={uploading}
+          variant="contained"
+          sx={{
+            backgroundColor: "#1E40AF",
+            "&:hover": {
+              backgroundColor: "#F59E0B",
+            },
+          }}>
+          {uploading ? 'Saving...' : 'Save Changes'}
+        </Button>
       </DialogActions>
     </Dialog>
   );

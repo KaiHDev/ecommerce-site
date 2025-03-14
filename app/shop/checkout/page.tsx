@@ -115,7 +115,7 @@ function CheckoutForm({
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 text-white">
+    <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -130,19 +130,19 @@ function CheckoutForm({
               onChange={handleChange}
               fullWidth
               required
-              InputLabelProps={{ style: { color: "white" } }}
-              InputProps={{ style: { color: "white" } }}
+              InputLabelProps={{ style: { color: "black" } }}
+              InputProps={{ style: { color: "black" } }}
               sx={{
                 "& .MuiOutlinedInput-root": {
-                  "& fieldset": { borderColor: "white" },
-                  "&:hover fieldset": { borderColor: "white" },
-                  "&.Mui-focused fieldset": { borderColor: "white" },
+                  "& fieldset": { borderColor: "black" },
+                  "&:hover fieldset": { borderColor: "black" },
+                  "&.Mui-focused fieldset": { borderColor: "black" },
                 },
               }}
             />
           ))}
 
-          <div className="p-4 bg-gray-800 rounded-md">
+          <div className="p-4 rounded-md">
             <CardElement />
           </div>
 
@@ -156,7 +156,7 @@ function CheckoutForm({
           </Button>
         </form>
 
-        <div className="bg-gray-800 p-4 rounded-md h-fit">
+        <div className="p-4 rounded-md h-fit">
           <h2 className="text-2xl font-semibold mb-4">Order Summary</h2>
           {cartItems.map((item) => (
             <div

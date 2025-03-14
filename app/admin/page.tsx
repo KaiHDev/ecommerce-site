@@ -16,7 +16,7 @@ const AdminPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        router.replace("/admin/login"); // Redirect unauthorized users
+        router.replace("/admin/login");
       } else {
         setIsAuthenticated(true);
       }
@@ -27,7 +27,7 @@ const AdminPage = () => {
     checkAuth();
   }, [router]);
 
-  if (loading) return <LoadingSpinner />; // Full screen spinner
+  if (loading) return <LoadingSpinner />;
 
   return isAuthenticated ? <AdminProductManagement /> : null;
 };

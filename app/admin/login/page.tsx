@@ -44,7 +44,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+    <div className="flex items-center justify-center h-[50vh] text-white">
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96">
         <h2 className="text-2xl font-bold mb-4 text-center">Admin Login</h2>
 
@@ -70,7 +70,7 @@ const LoginPage = () => {
 
         <button
           onClick={handleLogin}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+          className="w-full bg-primary hover:bg-accent bg-shadow-md text-white py-2 rounded"
         >
           Sign In
         </button>
