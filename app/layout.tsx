@@ -1,5 +1,7 @@
 "use client";
 
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "@/lib/theme";
 import "./styles/globals.css";
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -19,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 500); // Optional delay for smoother UX
+    }, 500);
 
     return () => clearTimeout(timeout);
   }, [pathname]);
@@ -28,13 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // Check for existing session on mount
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setIsAdmin(!!session); // Replace with role checks if needed
+      setIsAdmin(!!session);
     };
     checkSession();
 
     // Listen for auth changes (login/logout)
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdmin(!!session); // Update admin status on sign-in/out
+      setIsAdmin(!!session);
     });
 
     return () => {
@@ -43,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
+    <ThemeProvider theme={theme}>
     <html lang="en">
       <body>
         {isAdmin && <AdminHeader />}
@@ -52,5 +55,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
       </body>
     </html>
+    </ThemeProvider>
   );
 }

@@ -57,15 +57,20 @@ const ProductTable = ({
           <Button
             variant="contained"
             color="primary"
-            className="bg-blue-500 hover:bg-blue-700 text-white"
+            className="bg-primary hover:bg-accent text-white"
             onClick={() => handleEditClick(params.row)}
           >
             Edit
           </Button>
           <Button
             variant="contained"
-            color="secondary"
-            className="bg-purple-500 hover:bg-purple-700 text-white"
+            sx={{
+              backgroundColor: "#EF4444",
+              "&:hover": {
+                backgroundColor: "#DC2626",
+              },
+            }}
+            className="text-white"
             onClick={() => {
               setSelectedProduct(params.row.id);
               setOpenDeleteDialog(true);
@@ -85,7 +90,13 @@ const ProductTable = ({
       <div className="mb-4">
         <Button
           variant="contained"
-          color="secondary"
+          sx={{
+            backgroundColor: "#EF4444",
+            "&:hover": {
+              backgroundColor: "#DC2626",
+            },
+          }}
+          className="text-white"
           onClick={() => setIsBulkDeleteOpen(true)}
           disabled={selectedProducts.length === 0}
         >
@@ -103,11 +114,11 @@ const ProductTable = ({
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
         pageSizeOptions={[5, 10, 20]}
-        rowSelectionModel={selectedProducts} // Correct property name here
+        rowSelectionModel={selectedProducts}
         onRowSelectionModelChange={(newSelection: GridRowSelectionModel) => {
           setSelectedProducts(newSelection as string[]);
         }}
-        disableRowSelectionOnClick // Disable selection on clicking row, only checkbox will work
+        disableRowSelectionOnClick
       />
 
       {/* Edit Product Dialog */}
@@ -123,7 +134,7 @@ const ProductTable = ({
         open={isBulkDeleteOpen}
         onClose={() => setIsBulkDeleteOpen(false)}
         selectedProducts={selectedProducts}
-        setProducts={() => fetchProducts()}
+        fetchProducts={fetchProducts}
         clearSelection={() => setSelectedProducts([])}
       />
     </div>

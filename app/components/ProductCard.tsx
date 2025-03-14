@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardActions, CardContent, CardMedia, Button, Typography } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
+import Link from "next/link";
 
 type Product = {
   id: string;
@@ -10,62 +10,66 @@ type Product = {
   price: number;
   sku: string;
   primary_image_url?: string;
+  slug?: string;
+  description?: string;
 };
 
-// Define ProductCardProps type with onAddToBasket
-type ProductCardProps = {
-  product: Product;
-  onAddToBasket: (product: Product) => void;
-};
-
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product }: { product: Product }) => {
   const addToCart = useCartStore((state) => state.addToCart);
   const [added, setAdded] = useState(false);
 
   const handleAddToCart = () => {
     addToCart(product);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1000); // Reset after 1 seconds
+    setTimeout(() => setAdded(false), 1000);
   };
 
+  // Shorten description to about 50 characters
+  const shortDescription = product.description
+    ? product.description.length > 50
+      ? `${product.description.slice(0, 50)}...`
+      : product.description
+    : "";
+
   return (
-    <Card className="w-full h-full flex flex-col">
-      {product.primary_image_url && (
-        <CardMedia
-          component="img"
-          height="200"
-          image={product.primary_image_url}
+    <div className="shadow-md rounded-lg border border-gray-200 flex flex-col">
+      {/* Product Image */}
+      <div className="mt-5 ml-5 mr-5 flex justify-center items-center bg-gray-100 rounded-t-lg overflow-hidden">
+        <img
+          src={product.primary_image_url || "/images/Placeholder.jpg"}
           alt={product.name}
+          className="w-full h-full object-contain"
         />
-      )}
-      <CardContent className="flex-grow">
-        <Typography gutterBottom variant="h6" component="div">
-          {product.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          SKU: {product.sku}
-        </Typography>
-        <Typography variant="h6" color="text.primary" className="mt-2">
-          £{product.price.toFixed(2)}
-        </Typography>
-      </CardContent>
-      <CardActions className="flex flex-col items-start">
-        <Button
-          size="small"
-          variant="contained"
-          color={added ? "success" : "primary"}
+      </div>
+
+      {/* Product Info */}
+      <div className="text-center p-4 space-y-2 flex-grow">
+        <h3 className="text-lg font-semibold">{product.name}</h3>
+        <p className="text-gray-800 font-bold text-xl">£{product.price.toFixed(2)}</p>
+
+        {shortDescription && (
+          <p className="text-gray-600 text-sm">{shortDescription}</p>
+        )}
+      </div>
+
+      {/* Buttons */}
+      <div className="flex flex-col gap-2 px-4 pb-4">
+        <Link href={`/shop/product/${product.slug}`} passHref className="w-full">
+          <button className="w-full border border-primary text-primary py-2 rounded-md hover:bg-primary hover:text-white transition">
+            View Product
+          </button>
+        </Link>
+        <button
           onClick={handleAddToCart}
           disabled={added}
+          className={`w-full py-2 rounded-md transition ${
+            added ? "bg-yellow-600 text-white" : "bg-primary text-white hover:bg-accent"
+          }`}
         >
           {added ? "Added" : "Add to Basket"}
-        </Button>
-        {added && (
-          <Typography variant="caption" color="success.main" className="mt-1">
-            Product added to cart!
-          </Typography>
-        )}
-      </CardActions>
-    </Card>
+        </button>
+      </div>
+    </div>
   );
 };
 

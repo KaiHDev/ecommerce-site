@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -9,14 +9,18 @@ import ProductTable from './ProductTable';
 import SearchBar from './SearchBar';
 import AddProductButton from './AddProductButton';
 
-// Type definition for products
 type Product = {
   id: string;
   name: string;
   price: number;
   sku: string;
-  image_url?: string;
-  product_images?: string[];
+  slug: string;
+  primary_image_url?: string;
+  images?: {
+    id: string;
+    image_url: string;
+    image_order: number;
+  }[];
 };
 
 const AdminProductManagement = () => {
@@ -27,36 +31,35 @@ const AdminProductManagement = () => {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 5 });
 
-  // Fetch products from Supabase
+  // Fetch products with associated images
   const fetchProducts = async () => {
     const { data, error } = await supabase
-      .from("products")
+      .from('products')
       .select(`
-        *,
-        product_images (
-          image_url,
-          is_primary
-        )
-      `);
-  
+        id, name, price, sku, slug, description,
+        product_images (id, image_url, image_order)
+      `)
+      .order('created_at', { ascending: false });
+
     if (error) {
-      console.error("Error fetching products:", error);
+      console.error('Error fetching products:', error.message);
       return;
     }
-  
-    // Attach the primary image URL directly to the product object
-    const productsWithPrimaryImage = data.map((product: any) => {
-      const primaryImage = product.product_images.find(
-        (img: any) => img.is_primary
+
+    const formattedProducts = (data || []).map((product) => {
+      const sortedImages = (product.product_images || []).sort(
+        (a, b) => a.image_order - b.image_order
       );
+
       return {
         ...product,
-        primary_image_url: primaryImage ? primaryImage.image_url : null,
+        primary_image_url: sortedImages.length > 0 ? sortedImages[0].image_url : '',
+        images: sortedImages,
       };
     });
-  
-    setProducts(productsWithPrimaryImage);
-  };  
+
+    setProducts(formattedProducts);
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -64,16 +67,16 @@ const AdminProductManagement = () => {
 
   return (
     <AdminGuard>
-      <div className="p-4 bg-gray-900 text-white min-h-screen">
-        <h1 className="text-3xl font-bold mb-6">Admin Product Management</h1>
+      <div className="max-w-screen-xl mx-auto px-4 py-6">
+        <h1 className="text-3xl font-bold mb-6">Product Management</h1>
 
-        {/* Button to open Add Product Dialog */}
+        {/* Add Product Button */}
         <AddProductButton onClick={() => setOpenAddDialog(true)} />
 
-        {/* Search Bar Component */}
+        {/* Search Bar */}
         <SearchBar value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
 
-        {/* Product Table Component */}
+        {/* Product Table */}
         <ProductTable
           products={products}
           searchTerm={searchTerm}
@@ -83,20 +86,20 @@ const AdminProductManagement = () => {
           setPaginationModel={setPaginationModel}
           fetchProducts={fetchProducts}
         />
-        
-        {/* Add Product Dialog Component */}
+
+        {/* Add Product Dialog */}
         <AddProductDialog
           open={openAddDialog}
           onClose={() => setOpenAddDialog(false)}
           fetchProducts={fetchProducts}
         />
 
-        {/* Delete Product Dialog Component */}
+        {/* Delete Product Dialog */}
         <DeleteProductDialog
           open={openDeleteDialog}
           onClose={() => setOpenDeleteDialog(false)}
           selectedProduct={selectedProduct}
-          setProducts={setProducts}
+          fetchProducts={fetchProducts}
         />
       </div>
     </AdminGuard>

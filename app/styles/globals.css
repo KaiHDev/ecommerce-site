@@ -2,22 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
+/* Global Styles */
+html, body {
+  @apply bg-background text-textDark;
+  @apply min-h-screen flex flex-col;
   font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  margin: 0;
+}
+main {
+  @apply flex-grow;
+}
+
+/* Buttons */
+.btn-primary {
+  @apply bg-primary text-white font-medium py-2 px-4 rounded hover:bg-blue-700 transition;
+}
+
+.btn-accent {
+  @apply bg-accent text-white font-medium py-2 px-4 rounded hover:bg-yellow-600 transition;
 }
 
 /* Remove blue outline on selected cells */
@@ -36,4 +39,19 @@ body {
 }
 .MuiDataGrid-cell:focus-within {
   outline: none !important;
+}
+
+/* Set fixed height for gallery to prevent jumping */
+.custom-gallery .image-gallery-slide {
+  height: 400px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #fff !important;
+}
+
+/* Ensure images fit correctly */
+.custom-gallery .image-gallery-image {
+  max-height: 100% !important;
+  object-fit: contain !important;
 }

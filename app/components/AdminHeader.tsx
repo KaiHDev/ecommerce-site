@@ -25,7 +25,7 @@ const AdminHeader = () => {
     };
   }, []);
 
-  if (!user) return null; // ❌ Don't render anything if not logged in
+  if (!user) return null;
 
   return (
     <nav className="bg-gray-800 p-4 flex justify-between items-center shadow-md">
@@ -38,7 +38,7 @@ const AdminHeader = () => {
       <div>
         <button
           onClick={() => router.push("/admin")}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-all mr-3"
+          className="bg-primary hover:bg-accent bg-shadow-md text-white px-4 py-2 rounded-md transition-all mr-3"
         >
           Dashboard
         </button>
