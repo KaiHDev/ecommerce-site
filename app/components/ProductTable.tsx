@@ -12,6 +12,7 @@ type Product = {
   name: string;
   price: number;
   sku: string;
+  description: string;
   image_url?: string;
   product_images?: string[];
 };
@@ -35,10 +36,10 @@ const ProductTable = ({
   setPaginationModel,
   fetchProducts,
 }: ProductTableProps) => {
-  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState<boolean>(false);
 
   const handleEditClick = (product: Product) => {
     setEditingProduct(product);
@@ -58,7 +59,7 @@ const ProductTable = ({
             variant="contained"
             color="primary"
             className="bg-primary hover:bg-accent text-white"
-            onClick={() => handleEditClick(params.row)}
+            onClick={() => handleEditClick(params.row as Product)}
           >
             Edit
           </Button>
@@ -125,9 +126,20 @@ const ProductTable = ({
       <EditProductDialog
         open={openEditDialog}
         onClose={() => setOpenEditDialog(false)}
-        product={editingProduct}
+        product={
+          editingProduct
+            ? { 
+                id: editingProduct.id,
+                name: editingProduct.name,
+                price: editingProduct.price.toString(),
+                sku: editingProduct.sku,
+                description: editingProduct.description || "",
+              }
+            : null
+        }
         fetchProducts={fetchProducts}
       />
+
 
       {/* Bulk Delete Dialog */}
       <DeleteBulkDialog

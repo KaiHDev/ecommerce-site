@@ -16,6 +16,14 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string
 );
 
+// Define a CartItem Type
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  quantity?: number;
+};
+
 export default function CheckoutPage() {
   const cartItems = useCartStore((state) => state.cartItems);
 
@@ -38,11 +46,12 @@ export default function CheckoutPage() {
   );
 }
 
+// Define Checkout Form Props Type
 type CheckoutFormProps = {
   grandTotal: number;
   cartTotal: number;
   shippingCost: number;
-  cartItems: any[];
+  cartItems: CartItem[];
 };
 
 function CheckoutForm({
@@ -56,7 +65,15 @@ function CheckoutForm({
   const router = useRouter();
   const clearCart = useCartStore((state) => state.clearCart);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [form, setForm] = useState({
+
+  // Define form type
+  const [form, setForm] = useState<{
+    name: string;
+    email: string;
+    address: string;
+    city: string;
+    postcode: string;
+  }>({
     name: "",
     email: "",
     address: "",
@@ -65,23 +82,49 @@ function CheckoutForm({
   });
 
   useEffect(() => {
+    if (cartItems.length === 0) {
+      console.warn("No items in cart. Skipping payment intent creation.");
+      return;
+    }
+  
+    if (grandTotal <= 0 || isNaN(grandTotal)) {
+      console.error("Invalid grandTotal:", grandTotal);
+      return;
+    }
+  
+    console.log("Sending amount:", grandTotal);
+  
     const createPaymentIntent = async () => {
-      const res = await fetch("/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: grandTotal }),
-      });
-      const data = await res.json();
-      setClientSecret(data.clientSecret);
+      try {
+        const res = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: grandTotal }),
+        });
+  
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error("API Response Error:", errorData);
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+  
+        const data = await res.json();
+        console.log("Received clientSecret:", data.clientSecret);
+        setClientSecret(data.clientSecret);
+      } catch (error) {
+        console.error("Error creating payment intent:", error);
+      }
     };
   
     createPaymentIntent();
-  }, [grandTotal]);  
+  }, [cartTotal, shippingCost, grandTotal, cartItems]);  
 
+  // Handle Input Changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -119,14 +162,15 @@ function CheckoutForm({
       <h1 className="text-3xl font-bold mb-6">Checkout</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Checkout Form */}
         <form onSubmit={handleSubmit} className="space-y-4 md:col-span-2">
-          {["name", "email", "address", "city", "postcode"].map((field) => (
+          {(["name", "email", "address", "city", "postcode"] as const).map((field) => (
             <TextField
               key={field}
               label={field.charAt(0).toUpperCase() + field.slice(1)}
               name={field}
               type={field === "email" ? "email" : "text"}
-              value={form[field as keyof typeof form]}
+              value={form[field]}
               onChange={handleChange}
               fullWidth
               required
@@ -142,27 +186,21 @@ function CheckoutForm({
             />
           ))}
 
+          {/* Stripe Card Element */}
           <div className="p-4 rounded-md">
             <CardElement />
           </div>
 
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            className="mt-4"
-          >
+          <Button type="submit" variant="contained" color="primary" className="mt-4">
             Pay £{grandTotal.toFixed(2)}
           </Button>
         </form>
 
+        {/* Order Summary */}
         <div className="p-4 rounded-md h-fit">
           <h2 className="text-2xl font-semibold mb-4">Order Summary</h2>
           {cartItems.map((item) => (
-            <div
-              key={item.id}
-              className="flex justify-between text-sm md:text-base"
-            >
+            <div key={item.id} className="flex justify-between text-sm md:text-base">
               <span>
                 {item.name} (x{item.quantity || 1})
               </span>

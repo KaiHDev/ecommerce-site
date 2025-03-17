@@ -6,6 +6,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, I
 import { useDropzone } from 'react-dropzone';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import CloseIcon from '@mui/icons-material/Close';
+import Image from "next/image";
 
 type ImageType = {
   id: string;
@@ -13,7 +14,20 @@ type ImageType = {
   image_order: number;
 };
 
-const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
+interface EditProductDialogProps {
+  open: boolean;
+  onClose: () => void;
+  product: {
+    id: string;
+    name: string;
+    price: string;
+    sku: string;
+    description?: string;
+  } | null;
+  fetchProducts: () => void;
+}
+
+const EditProductDialog = ({ open, onClose, product, fetchProducts }: EditProductDialogProps) => {
   const [updatedProduct, setUpdatedProduct] = useState({ name: '', price: '', sku: '', description: '' });
   const [existingImages, setExistingImages] = useState<ImageType[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
@@ -103,7 +117,7 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
         price: parseFloat(updatedProduct.price),
         sku: updatedProduct.sku,
         description: updatedProduct.description,
-      }).eq('id', product.id);
+      }).eq('id', product?.id);
 
       // Delete removed images
       if (deletedImages.length) {
@@ -117,7 +131,7 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
 
       // Upload new images & insert records
       for (const [idx, file] of newImages.entries()) {
-        const filePath = `products/${product.id}-${Date.now()}-${file.name}`;
+        const filePath = `products/${product?.id}-${Date.now()}-${file.name}`;
         const { error } = await supabase.storage.from('product-images').upload(filePath, file);
         if (error) {
           console.error('Upload error:', error.message);
@@ -125,7 +139,7 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
         }
         const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
         await supabase.from('product_images').insert({
-          product_id: product.id,
+          product_id: product?.id,
           image_url: data.publicUrl,
           image_order: existingImages.find(img => img.id.startsWith('new-'))!.image_order + idx,
         });
@@ -133,8 +147,8 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
 
       fetchProducts();
       onClose();
-    } catch (error: any) {
-      alert(`Error updating product: ${error.message}`);
+    } catch (error) {
+      alert(`Error updating product: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setUploading(false);
     }
@@ -186,9 +200,11 @@ const EditProductDialog = ({ open, onClose, product, fetchProducts }: any) => {
                         {...provided.dragHandleProps}
                         className="relative border p-2 rounded shadow overflow-hidden"
                       >
-                        <img
+                        <Image
                           src={img.image_url}
                           alt={`Image ${index}`}
+                          width={200}
+                          height={200}
                           className="w-full h-auto rounded"
                         />
 
