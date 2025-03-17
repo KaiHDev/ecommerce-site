@@ -9,7 +9,6 @@ import {
   InputLabel,
   FormControl,
   Button,
-  Typography,
 } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
@@ -39,9 +38,6 @@ const ShopPage = () => {
 
   // Cart functionality
   const addToCart = useCartStore((state) => state.addToCart);
-  const cartItems = useCartStore((state) => state.cartItems);
-
-  const isProductInCart = (productId: string) => cartItems.some((item) => item.id === productId);
 
   // Fetch products with images
   useEffect(() => {
