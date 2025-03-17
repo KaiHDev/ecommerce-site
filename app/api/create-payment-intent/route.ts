@@ -8,7 +8,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("Received request body:", body); // Debugging log
 
     let { amount } = body;
 
@@ -17,17 +16,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid amount." }, { status: 400 });
     }
 
-    amount = Math.round(amount * 100); // Convert GBP to pence
-
-    console.log("Creating payment intent for amount (in pence):", amount);
+    amount = Math.round(amount * 100);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "gbp",
       payment_method_types: ["card"],
     });
-
-    console.log("Payment Intent Created:", paymentIntent.id);
 
     return NextResponse.json({ clientSecret: paymentIntent.client_secret }, { status: 200 });
   } catch (error) {

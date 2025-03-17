@@ -4,19 +4,11 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PiShoppingCartLight } from "react-icons/pi";
-import { TextField, Autocomplete, Box, Typography, AutocompleteChangeReason } from "@mui/material";
+import { TextField, Autocomplete, Box, Typography } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-
-// Define Product Type
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  slug: string;
-  primary_image_url?: string;
-};
+import { Product } from "../types/Product";
 
 const ShopHeader = () => {
   const router = useRouter();
@@ -25,44 +17,42 @@ const ShopHeader = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Fetch Products for Search Dropdown
   useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, slug, product_images (image_url)")
+        .select(`
+          id, name, price, slug, sku, product_images (image_url, image_order)
+        `)
         .limit(10);
-
+  
       if (error) {
         console.error("Error fetching products:", error.message);
-      } else {
-        // Ensure each product has a primary image or fallback
-        const productsWithImages = (data as any[]).map((product) => ({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          slug: product.slug,
-          primary_image_url: product.product_images?.[0]?.image_url || "/images/Placeholder.jpg",
+      } else if (data) {
+        const productsWithImages: Product[] = data.map((product) => ({
+          ...product,
+          product_images: product.product_images || [],
+          primary_image_url:
+            product.product_images?.[0]?.image_url || "/images/Placeholder.jpg",
         }));
+  
         setProducts(productsWithImages);
       }
     };
-
+  
     fetchProducts();
-  }, []);
+  }, []);  
 
   // Handle Search Input Changes (Handles Both Strings & Products)
   const handleSearchChange = (_event: React.SyntheticEvent, value: string | Product | null) => {
     if (typeof value === "string") {
-      setSearchTerm(value);
       const filtered = products.filter((product) =>
         product.name.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredProducts(filtered);
     } else {
-      setSearchTerm("");
       setFilteredProducts(products);
     }
   };
@@ -70,8 +60,7 @@ const ShopHeader = () => {
   // Handle Selection & Redirect to Product Page
   const handleSelect = (
     _event: React.SyntheticEvent,
-    newValue: string | Product | null,
-    _reason: AutocompleteChangeReason
+    newValue: string | Product | null
   ) => {
     if (newValue && typeof newValue === "object" && "slug" in newValue) {
       router.push(`/shop/product/${newValue.slug}`);
@@ -97,38 +86,40 @@ const ShopHeader = () => {
             renderInput={(params) => (
               <TextField {...params} label="Search Products" variant="outlined" fullWidth sx={{ width: 500 }} />
             )}
-            renderOption={(props, option) => (
-              <Box
-                component="li"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "10px",
-                  gap: 2,
-                  width: "100%",
-                  borderBottom: "1px solid #e0e0e0",
-                  "&:last-child": { borderBottom: "none" },
-                }}
-                {...props}
-              >
-                {/* Product Image */}
-                <Image
-                  src={option.primary_image_url ?? "/images/Placeholder.jpg"}
-                  alt={option.name}
-                  width={64}
-                  height={64}
-                  className="w-16 h-16 object-contain rounded border border-gray-300"
-                />
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body1" className="font-semibold">
-                    {option.name}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    £{option.price.toFixed(2)}
-                  </Typography>
+            renderOption={(props, option) => {
+              return (
+                <Box
+                  component="li"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "10px",
+                    gap: 2,
+                    width: "100%",
+                    borderBottom: "1px solid #e0e0e0",
+                    "&:last-child": { borderBottom: "none" },
+                  }}
+                  {...props}
+                >
+                  {/* Product Image */}
+                  <Image
+                    src={option.primary_image_url ?? "/images/Placeholder.jpg"}
+                    alt={option.name}
+                    width={64}
+                    height={64}
+                    className="w-16 h-16 object-contain rounded border border-gray-300"
+                  />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="body1" className="font-semibold">
+                      {option.name}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      £{option.price.toFixed(2)}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            )}
+              );
+            }}                        
           />
         </div>
 

@@ -6,16 +6,7 @@ import { Button } from "@mui/material";
 import EditProductDialog from "./EditProductDialog";
 import DeleteBulkDialog from "./DeleteBulkDialog";
 import '../styles/globals.css';
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  sku: string;
-  description: string;
-  image_url?: string;
-  product_images?: string[];
-};
+import { Product } from "../types/Product";
 
 type ProductTableProps = {
   products: Product[];

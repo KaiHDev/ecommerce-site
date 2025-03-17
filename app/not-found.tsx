@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Button, Container, Typography } from "@mui/material";
-import Image from "next/image";
 
 const NotFoundPage = () => {
   return (
@@ -17,7 +16,7 @@ const NotFoundPage = () => {
 
       {/* Description */}
       <Typography variant="body1" className="text-gray-600 mt-2">
-        The page you are looking for doesn't exist or has been moved.
+        The page you are looking for doesn&rsquo;t exist or has been moved.
       </Typography>
 
       {/* Navigation Buttons */}
