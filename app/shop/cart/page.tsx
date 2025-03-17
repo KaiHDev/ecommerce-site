@@ -4,6 +4,7 @@ import React from "react";
 import { Button, IconButton } from "@mui/material";
 import { Add, Remove, Close } from "@mui/icons-material";
 import { useCartStore } from "@/lib/useCartStore";
+import Image from "next/image";
 
 export default function CartPage() {
   const cartItems = useCartStore((state) => state.cartItems);
@@ -29,9 +30,11 @@ export default function CartPage() {
             >
               {/* Product Thumbnail */}
               <div className="w-20 h-20 border border-gray-300 rounded-md flex justify-center items-center bg-gray-100">
-                <img
+                <Image
                   src={item.primary_image_url || "/images/Placeholder.jpg"}
                   alt={item.name}
+                  width={200}
+                  height={200}
                   className="w-full h-full object-contain rounded-md"
                 />
               </div>

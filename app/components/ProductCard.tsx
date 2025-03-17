@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useCartStore } from "@/lib/useCartStore";
 import Link from "next/link";
+import Image from "next/image";
 
 type Product = {
   id: string;
@@ -35,9 +36,11 @@ const ProductCard = ({ product }: { product: Product }) => {
     <div className="shadow-md rounded-lg border border-gray-200 flex flex-col">
       {/* Product Image */}
       <div className="mt-5 ml-5 mr-5 flex justify-center items-center bg-gray-100 rounded-t-lg overflow-hidden">
-        <img
+        <Image
           src={product.primary_image_url || "/images/Placeholder.jpg"}
           alt={product.name}
+          width={200}
+          height={200}
           className="w-full h-full object-contain"
         />
       </div>

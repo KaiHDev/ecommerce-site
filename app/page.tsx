@@ -3,18 +3,22 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import ProductCard from "./components/ProductCard";
-import LoadingSpinner from "./components/LoadingSpinner";
 import HeroSection from "./components/HeroSection";
-import Footer from "./components/Footer";
 import FeatureSection from "./components/FeatureSection";
 import TestimonialsSection from "./components/TestimonialsSection";
+
+type ProductImage = {
+  image_url: string;
+  image_order: number;
+};
 
 type Product = {
   id: string;
   name: string;
   price: number;
   sku: string;
-  primary_image_url?: string;
+  slug: string;
+  product_images: ProductImage[];
 };
 
 const HomePage = () => {
@@ -37,10 +41,11 @@ const HomePage = () => {
         return;
       }
       
-      const productsWithPrimaryImages = data.map((product: any) => {
-        const sortedImages = product.product_images.sort(
-          (a: any, b: any) => a.image_order - b.image_order
+      const productsWithPrimaryImages = data.map((product: Product) => {
+        const sortedImages = [...product.product_images].sort(
+          (a, b) => a.image_order - b.image_order
         );
+      
         return {
           ...product,
           primary_image_url: sortedImages[0]?.image_url || "/images/Placeholder.jpg",

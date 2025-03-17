@@ -3,20 +3,29 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingCart } from "@mui/icons-material";
 import { PiShoppingCartLight } from "react-icons/pi";
-import { TextField, Autocomplete, Box, Typography, IconButton } from "@mui/material";
+import { TextField, Autocomplete, Box, Typography, AutocompleteChangeReason } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
+
+// Define Product Type
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  slug: string;
+  primary_image_url?: string;
+};
 
 const ShopHeader = () => {
   const router = useRouter();
   const cartItems = useCartStore((state) => state.cartItems);
   const totalItems = cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
 
-  const [products, setProducts] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Fetch Products for Search Dropdown
   useEffect(() => {
@@ -29,13 +38,14 @@ const ShopHeader = () => {
       if (error) {
         console.error("Error fetching products:", error.message);
       } else {
-        const productsWithImages = (data as any[]).map((product) => {
-          const primaryImage = product.product_images?.[0]?.image_url;
-          return {
-            ...product,
-            primary_image_url: primaryImage || "/images/Placeholder.jpg",
-          };
-        });
+        // Ensure each product has a primary image or fallback
+        const productsWithImages = (data as any[]).map((product) => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          slug: product.slug,
+          primary_image_url: product.product_images?.[0]?.image_url || "/images/Placeholder.jpg",
+        }));
         setProducts(productsWithImages);
       }
     };
@@ -43,18 +53,27 @@ const ShopHeader = () => {
     fetchProducts();
   }, []);
 
-  // Handle Search Input Changes
-  const handleSearchChange = (event: React.SyntheticEvent<Element, Event>, value: string) => {
-    setSearchTerm(value);
-    const filtered = products.filter((product) =>
-      product.name.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredProducts(filtered);
+  // Handle Search Input Changes (Handles Both Strings & Products)
+  const handleSearchChange = (_event: React.SyntheticEvent, value: string | Product | null) => {
+    if (typeof value === "string") {
+      setSearchTerm(value);
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredProducts(filtered);
+    } else {
+      setSearchTerm("");
+      setFilteredProducts(products);
+    }
   };
 
   // Handle Selection & Redirect to Product Page
-  const handleSelect = (_event: any, newValue: any) => {
-    if (newValue && newValue.slug) {
+  const handleSelect = (
+    _event: React.SyntheticEvent,
+    newValue: string | Product | null,
+    _reason: AutocompleteChangeReason
+  ) => {
+    if (newValue && typeof newValue === "object" && "slug" in newValue) {
       router.push(`/shop/product/${newValue.slug}`);
     }
   };
@@ -72,52 +91,44 @@ const ShopHeader = () => {
           <Autocomplete
             freeSolo
             options={filteredProducts}
-            getOptionLabel={(option) => option.name}
+            getOptionLabel={(option) => (typeof option === "string" ? option : option.name)}
             onInputChange={handleSearchChange}
             onChange={handleSelect}
             renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Search Products"
-                variant="outlined"
-                fullWidth
-                sx={{ width: 500 }}
-              />
+              <TextField {...params} label="Search Products" variant="outlined" fullWidth sx={{ width: 500 }} />
             )}
-            renderOption={(props, option) => {
-              const { key, ...restProps } = props; 
-              return (
-                <Box
-                  key={option.id}
-                  component="li"
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "10px",
-                    gap: 2,
-                    width: "100%",
-                    borderBottom: "1px solid #e0e0e0",
-                    "&:last-child": { borderBottom: "none" },
-                  }}
-                  {...restProps}
-                >
-                  {/* Larger and clearer image */}
-                  <img
-                    src={option.primary_image_url}
-                    alt={option.name}
-                    className="w-16 h-16 object-contain rounded border border-gray-300"
-                  />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="body1" className="font-semibold">
-                      {option.name}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      £{option.price.toFixed(2)}
-                    </Typography>
-                  </Box>
+            renderOption={(props, option) => (
+              <Box
+                component="li"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "10px",
+                  gap: 2,
+                  width: "100%",
+                  borderBottom: "1px solid #e0e0e0",
+                  "&:last-child": { borderBottom: "none" },
+                }}
+                {...props}
+              >
+                {/* Product Image */}
+                <Image
+                  src={option.primary_image_url ?? "/images/Placeholder.jpg"}
+                  alt={option.name}
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 object-contain rounded border border-gray-300"
+                />
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body1" className="font-semibold">
+                    {option.name}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    £{option.price.toFixed(2)}
+                  </Typography>
                 </Box>
-              );
-            }}            
+              </Box>
+            )}
           />
         </div>
 

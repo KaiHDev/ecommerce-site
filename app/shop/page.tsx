@@ -1,11 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Pagination, TextField, MenuItem, Select, InputLabel, FormControl, Button, Typography } from "@mui/material";
+import {
+  Pagination,
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Button,
+  Typography,
+} from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import Image from "next/image";
 
+// Define Product Type
 type Product = {
   id: string;
   name: string;
@@ -17,11 +28,11 @@ type Product = {
 
 const ShopPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
-  const [priceFilter, setPriceFilter] = useState<string>("");
+  const [page, setPage] = useState<number>(1);
+  const [pageSize] = useState<number>(6);
+  const [priceFilter, setPriceFilter] = useState<"low" | "high" | "">("");
 
   // Track added state for each product
   const [addedState, setAddedState] = useState<{ [key: string]: boolean }>({});
@@ -30,34 +41,27 @@ const ShopPage = () => {
   const addToCart = useCartStore((state) => state.addToCart);
   const cartItems = useCartStore((state) => state.cartItems);
 
-  const isProductInCart = (productId: string) => {
-    return cartItems.some(item => item.id === productId);
-  };
+  const isProductInCart = (productId: string) => cartItems.some((item) => item.id === productId);
 
   // Fetch products with images
   useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from("products")
-        .select(`
-          id, name, price, sku, slug,
-          product_images(image_url, image_order)
-        `);
+        .select(`id, name, price, sku, slug, product_images(image_url, image_order)`);
 
       if (error) {
         console.error(error.message);
-      } else {
-        const productsWithPrimaryImage = data.map((product: any) => {
-          // Sort images by image_order and select the first image
-          const sortedImages = product.product_images.sort(
-            (a: any, b: any) => a.image_order - b.image_order
-          );
-          const primaryImage = sortedImages.length > 0 ? sortedImages[0].image_url : "/images/Placeholder.jpg";
+      } else if (data) {
+        const productsWithPrimaryImage: Product[] = data.map((product) => {
+          const sortedImages = product.product_images
+            ?.sort((a: { image_order: number }, b: { image_order: number }) => a.image_order - b.image_order)
+            .map((img: { image_url: string }) => img.image_url);
 
           return {
             ...product,
-            primary_image_url: primaryImage,
-            slug: product.slug || product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
+            primary_image_url: sortedImages?.[0] || "/images/Placeholder.jpg",
+            slug: product.slug || product.name.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]+/g, ""),
           };
         });
 
@@ -68,7 +72,6 @@ const ShopPage = () => {
     fetchProducts();
   }, []);
 
-
   // Filter products based on search term and price filter
   useEffect(() => {
     let filtered = products.filter((product) =>
@@ -76,30 +79,22 @@ const ShopPage = () => {
     );
 
     if (priceFilter) {
-      filtered = filtered.sort((a, b) =>
-        priceFilter === "low" ? a.price - b.price : b.price - a.price
-      );
+      filtered = filtered.sort((a, b) => (priceFilter === "low" ? a.price - b.price : b.price - a.price));
     }
 
     setFilteredProducts(filtered);
   }, [searchTerm, priceFilter, products]);
 
   // Handle pagination change
-  const handlePageChange = (_: any, value: number) => setPage(value);
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => setPage(value);
 
   // Function to add product to the cart
   const handleAddToCart = (product: Product) => {
     addToCart(product);
-    setAddedState((prevState) => ({
-      ...prevState,
-      [product.id]: true,
-    }));
+    setAddedState((prevState) => ({ ...prevState, [product.id]: true }));
 
     setTimeout(() => {
-      setAddedState((prevState) => ({
-        ...prevState,
-        [product.id]: false,
-      }));
+      setAddedState((prevState) => ({ ...prevState, [product.id]: false }));
     }, 1000);
   };
 
@@ -117,7 +112,11 @@ const ShopPage = () => {
         />
         <FormControl className="w-full md:w-64">
           <InputLabel>Price Filter</InputLabel>
-          <Select value={priceFilter} onChange={(e) => setPriceFilter(e.target.value)} label="Price Filter">
+          <Select
+            value={priceFilter}
+            onChange={(e) => setPriceFilter(e.target.value as "low" | "high" | "")}
+            label="Price Filter"
+          >
             <MenuItem value="low">Low to High</MenuItem>
             <MenuItem value="high">High to Low</MenuItem>
           </Select>
@@ -135,18 +134,20 @@ const ShopPage = () => {
               <div key={product.id} className="bg-white border border-gray-200 shadow-md rounded-lg p-4 flex flex-col items-center">
                 {/* Product Image */}
                 <div className="w-full h-64 flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden">
-                  <img
-                    src={product.primary_image_url || "/path/to/placeholder.jpg"}
+                  <Image
+                    src={product.primary_image_url}
                     alt={product.name}
+                    width={200}
+                    height={200}
                     className="w-full h-full object-contain"
                   />
                 </div>
 
                 {/* Product Info */}
                 <h3 className="text-lg font-semibold mt-3">{product.name}</h3>
-                <p className="text-xl font-bold text-gray-800 mt-2">£{product.price}</p>
+                <p className="text-xl font-bold text-gray-800 mt-2">£{product.price.toFixed(2)}</p>
 
-                {/* Action Buttons (Stacked, Centered, and Equal Width) */}
+                {/* Action Buttons */}
                 <div className="w-full flex flex-col items-center space-y-2 mt-4">
                   <Link href={`/shop/product/${product.slug}`} passHref className="w-full">
                     <Button variant="outlined" color="primary" fullWidth>

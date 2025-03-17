@@ -48,9 +48,9 @@ const DeleteBulkDialog = ({
       fetchProducts();
       clearSelection();
       onClose();
-    } catch (error: any) {
-      console.error('Bulk deletion error:', error.message);
-      alert(`Bulk deletion error: ${error.message}`);
+    } catch (error) {
+      console.error('Bulk deletion error:', error);
+      alert(`Bulk deletion error: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 

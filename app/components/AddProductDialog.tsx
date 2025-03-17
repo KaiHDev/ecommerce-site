@@ -6,6 +6,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, I
 import { useDropzone } from 'react-dropzone';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import CloseIcon from '@mui/icons-material/Close';
+import Image from "next/image";
 
 type ImagePreview = {
   id: string;
@@ -13,7 +14,13 @@ type ImagePreview = {
   image_order: number;
 };
 
-const AddProductDialog = ({ open, onClose, fetchProducts }: any) => {
+type AddProductDialogProps = {
+  open: boolean;
+  onClose: () => void;
+  fetchProducts: () => Promise<void>;
+};
+
+const AddProductDialog: React.FC<AddProductDialogProps> = ({ open, onClose, fetchProducts }) => {
   const [product, setProduct] = useState({ name: '', price: '', sku: '', description: '' });
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
@@ -130,9 +137,9 @@ const AddProductDialog = ({ open, onClose, fetchProducts }: any) => {
       fetchProducts();
       resetForm();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding product:', error);
-      alert(`Error: ${error.message}`);
+      alert(`Error: ${error instanceof Error ? error.message : "An unknown error occurred."}`);
     } finally {
       setUploading(false);
     }
@@ -197,10 +204,12 @@ const AddProductDialog = ({ open, onClose, fetchProducts }: any) => {
                         {...provided.dragHandleProps}
                         className="relative border p-2 rounded shadow overflow-hidden"
                       >
-                        <img 
-                          src={img.image_url} 
-                          alt={`Preview ${index}`} 
-                          className="w-full h-auto rounded" 
+                        <Image
+                          src={img.image_url}
+                          alt={`Preview ${index}`}
+                          width={200}
+                          height={200}
+                          className="w-full h-auto rounded"
                         />
 
                         <IconButton

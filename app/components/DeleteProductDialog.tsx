@@ -42,9 +42,9 @@ const DeleteProductDialog = ({
 
       fetchProducts();
       onClose();
-    } catch (error: any) {
-      console.error('Error deleting product:', error.message);
-      alert(`Deletion error: ${error.message}`);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert(`Deletion error: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
