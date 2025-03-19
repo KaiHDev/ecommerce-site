@@ -8,7 +8,6 @@ import {
   Select,
   InputLabel,
   FormControl,
-  Button,
 } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
@@ -115,10 +114,8 @@ const ShopPage = () => {
         {filteredProducts
           .slice((page - 1) * pageSize, page * pageSize)
           .map((product) => {
-            const added = addedState[product.id] || false;
 
             return (
-              // Inside the .map() return of your ShopPage:
               <div
                 key={product.id}
                 className="bg-white border border-gray-200 shadow-md rounded-lg p-4 flex flex-col items-center"

@@ -65,7 +65,7 @@ const ProductPage = () => {
       }
 
       if (data) {
-        const productData = data as ProductWithImages; // Ensure correct typing
+        const productData = data as ProductWithImages;
 
         // Sort images by `image_order`
         const sortedImages = [...productData.product_images].sort(
