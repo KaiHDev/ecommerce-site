@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PiShoppingCartLight } from "react-icons/pi";
+import { PiShoppingCartLight, PiListBold, PiXBold } from "react-icons/pi";
 import { TextField, Autocomplete, Box, Typography } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
@@ -17,8 +17,8 @@ const ShopHeader = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Fetch Products for Search Dropdown
   useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
@@ -45,7 +45,6 @@ const ShopHeader = () => {
     fetchProducts();
   }, []);  
 
-  // Handle Search Input Changes (Handles Both Strings & Products)
   const handleSearchChange = (_event: React.SyntheticEvent, value: string | Product | null) => {
     if (typeof value === "string") {
       const filtered = products.filter((product) =>
@@ -57,26 +56,25 @@ const ShopHeader = () => {
     }
   };
 
-  // Handle Selection & Redirect to Product Page
   const handleSelect = (
     _event: React.SyntheticEvent,
     newValue: string | Product | null
   ) => {
     if (newValue && typeof newValue === "object" && "slug" in newValue) {
       router.push(`/shop/product/${newValue.slug}`);
+      setMenuOpen(false);
     }
   };
 
   return (
     <header className="w-full bg-white shadow-md py-4 px-6">
       <div className="max-w-screen-xl px-4 mx-auto flex justify-between items-center">
-        {/* Logo */}
         <Link href="/" className="text-2xl font-bold text-gray-800">
           My Store
         </Link>
 
-        {/* Search Bar with Autocomplete */}
-        <div className="flex justify-center items-center flex-grow mx-6">
+        {/* Desktop Search */}
+        <div className="hidden lg:flex justify-center items-center flex-grow mx-6">
           <Autocomplete
             freeSolo
             options={filteredProducts}
@@ -123,8 +121,8 @@ const ShopHeader = () => {
           />
         </div>
 
-        {/* Navigation + Cart */}
-        <div className="flex items-center space-x-6">
+        {/* Desktop Nav + Cart */}
+        <div className="hidden lg:flex items-center space-x-6">
           <nav className="flex space-x-6">
             <Link href="/shop" className="text-gray-600 hover:text-black">
               Shop
@@ -136,8 +134,6 @@ const ShopHeader = () => {
               Contact
             </Link>
           </nav>
-
-          {/* Cart Icon with Counter */}
           <Link href="/shop/cart" className="relative text-gray-600 hover:text-black">
             <PiShoppingCartLight fontSize="30px" />
             {totalItems > 0 && (
@@ -147,7 +143,92 @@ const ShopHeader = () => {
             )}
           </Link>
         </div>
+
+        {/* Mobile Hamburger */}
+        <div className="flex lg:hidden items-center space-x-4">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-gray-800 focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <PiXBold fontSize="32px" /> : <PiListBold fontSize="32px" />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Dropdown */}
+      {menuOpen && (
+        <div className="lg:hidden bg-white shadow-md p-4 space-y-6">
+          <div>
+            <Autocomplete
+              freeSolo
+              options={filteredProducts}
+              getOptionLabel={(option) => (typeof option === "string" ? option : option.name)}
+              onInputChange={handleSearchChange}
+              onChange={handleSelect}
+              renderInput={(params) => (
+                <TextField {...params} label="Search Products" variant="outlined" fullWidth />
+              )}
+              renderOption={(props, option) => {
+                const { key, ...restProps } = props;
+                return (
+                  <Box
+                    key={key}
+                    component="li"
+                    {...restProps}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "10px",
+                      gap: 2,
+                      width: "100%",
+                      borderBottom: "1px solid #e0e0e0",
+                      "&:last-child": { borderBottom: "none" },
+                    }}
+                  >
+                    <Image
+                      src={option.primary_image_url ?? "/images/Placeholder.jpg"}
+                      alt={option.name}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 object-contain rounded border border-gray-300"
+                    />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body1" className="font-semibold">
+                        {option.name}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        £{option.price.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              }}
+            />
+          </div>
+
+          <nav className="flex flex-col space-y-4">
+            <Link href="/shop" onClick={() => setMenuOpen(false)} className="text-gray-700 hover:text-black">
+              Shop
+            </Link>
+            <Link href="/about" onClick={() => setMenuOpen(false)} className="text-gray-700 hover:text-black">
+              About
+            </Link>
+            <Link href="/contact" onClick={() => setMenuOpen(false)} className="text-gray-700 hover:text-black">
+              Contact
+            </Link>
+            <Link href="/shop/cart" onClick={() => setMenuOpen(false)} className="relative text-gray-700 hover:text-black flex items-center gap-2">
+              <PiShoppingCartLight fontSize="26px" />
+              Cart
+              {totalItems > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

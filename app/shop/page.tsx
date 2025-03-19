@@ -8,14 +8,12 @@ import {
   Select,
   InputLabel,
   FormControl,
-  Button,
 } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import Image from "next/image";
 
-// Define Product Type
 type Product = {
   id: string;
   name: string;
@@ -30,16 +28,13 @@ const ShopPage = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [page, setPage] = useState<number>(1);
-  const [pageSize] = useState<number>(6);
+  const [pageSize] = useState<number>(8);
   const [priceFilter, setPriceFilter] = useState<"low" | "high" | "">("");
 
-  // Track added state for each product
   const [addedState, setAddedState] = useState<{ [key: string]: boolean }>({});
 
-  // Cart functionality
   const addToCart = useCartStore((state) => state.addToCart);
 
-  // Fetch products with images
   useEffect(() => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
@@ -68,7 +63,6 @@ const ShopPage = () => {
     fetchProducts();
   }, []);
 
-  // Filter products based on search term and price filter
   useEffect(() => {
     let filtered = products.filter((product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -81,22 +75,19 @@ const ShopPage = () => {
     setFilteredProducts(filtered);
   }, [searchTerm, priceFilter, products]);
 
-  // Handle pagination change
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => setPage(value);
 
-  // Function to add product to the cart
   const handleAddToCart = (product: Product) => {
     addToCart(product);
     setAddedState((prevState) => ({ ...prevState, [product.id]: true }));
 
     setTimeout(() => {
       setAddedState((prevState) => ({ ...prevState, [product.id]: false }));
-    }, 1000);
+    }, 1500);
   };
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-10">
-      {/* Search & Filter Section */}
       <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
         <TextField
           label="Search Products"
@@ -119,16 +110,16 @@ const ShopPage = () => {
         </FormControl>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
         {filteredProducts
           .slice((page - 1) * pageSize, page * pageSize)
           .map((product) => {
-            const added = addedState[product.id] || false;
 
             return (
-              <div key={product.id} className="bg-white border border-gray-200 shadow-md rounded-lg p-4 flex flex-col items-center">
-                {/* Product Image */}
+              <div
+                key={product.id}
+                className="bg-white border border-gray-200 shadow-md rounded-lg p-4 flex flex-col items-center"
+              >
                 <div className="w-full h-64 flex justify-center items-center bg-gray-100 rounded-lg overflow-hidden">
                   <Image
                     src={product.primary_image_url}
@@ -139,35 +130,38 @@ const ShopPage = () => {
                   />
                 </div>
 
-                {/* Product Info */}
                 <h3 className="text-lg font-semibold mt-3">{product.name}</h3>
                 <p className="text-xl font-bold text-gray-800 mt-2">£{product.price.toFixed(2)}</p>
 
-                {/* Action Buttons */}
                 <div className="w-full flex flex-col items-center space-y-2 mt-4">
                   <Link href={`/shop/product/${product.slug}`} passHref className="w-full">
-                    <Button variant="outlined" color="primary" fullWidth>
+                    <button className="w-full border border-primary text-primary py-2 rounded-md hover:bg-primary hover:text-white transition">
                       View Product
-                    </Button>
+                    </button>
                   </Link>
-                  <Button
-                    variant="contained"
-                    color={added ? "success" : "primary"}
+                  <button
                     onClick={() => handleAddToCart(product)}
-                    disabled={added}
-                    fullWidth
+                    disabled={addedState[product.id]}
+                    className={`w-full py-2 rounded-md transition ${
+                      addedState[product.id]
+                        ? "bg-yellow-600 text-white"
+                        : "bg-primary text-white hover:bg-accent"
+                    }`}
                   >
-                    {added ? "Added" : "Add to Basket"}
-                  </Button>
+                    {addedState[product.id] ? "Added" : "Add to Basket"}
+                  </button>
                 </div>
               </div>
             );
           })}
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-center mt-10">
-        <Pagination count={Math.ceil(filteredProducts.length / pageSize)} page={page} onChange={handlePageChange} />
+        <Pagination
+          count={Math.ceil(filteredProducts.length / pageSize)}
+          page={page}
+          onChange={handlePageChange}
+        />
       </div>
     </div>
   );

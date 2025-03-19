@@ -14,7 +14,7 @@ const AboutUsPage = () => {
           online with excellent customer service. Our team is dedicated to ensuring you have the best
           shopping experience possible. Stay tuned as we continue to bring you new and exciting products.
         </p>
-        <h2 className="text-2xl font-semibold mt-6 text-center">Our Mission</h2>
+        <h2 className="text-2xl font-semibold mt-10 text-center">Our Mission</h2>
         <p className="text-lg mt-2 text-center">
           Our mission is to bring high-quality products to people around the world, while ensuring
           the best prices and the most convenient shopping experience. We aim to build a long-lasting
