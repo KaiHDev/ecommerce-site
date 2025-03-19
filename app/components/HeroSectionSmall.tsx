@@ -6,7 +6,7 @@ const HeroSectionSmall = ({ title }: { title: string }) => {
   return (
     <section
       className="relative w-full h-[40vh] flex items-center justify-center text-center text-white bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/HeroSection.jpg')" }}
+      style={{ backgroundImage: "url('/images/Fashion-small-image.jpg')" }}
     >
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black bg-opacity-50"></div>

@@ -65,7 +65,7 @@ const ContactUsPage = () => {
           </Box>
 
           {/* Shop Address */}
-          <Paper elevation={3} className="bg-gray-100 p-6 rounded-lg shadow-md border border-gray-300">
+          <Paper elevation={3} className="bg-white shadow-md border border-gray-200 rounded-lg p-6">
             <Typography variant="h5" sx={{ fontWeight: "bold", mb: 3 }}>
               Find Us
             </Typography>
