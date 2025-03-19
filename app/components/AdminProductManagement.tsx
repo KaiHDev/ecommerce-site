@@ -8,20 +8,7 @@ import DeleteProductDialog from './DeleteProductDialog';
 import ProductTable from './ProductTable';
 import SearchBar from './SearchBar';
 import AddProductButton from './AddProductButton';
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  sku: string;
-  slug: string;
-  primary_image_url?: string;
-  images?: {
-    id: string;
-    image_url: string;
-    image_order: number;
-  }[];
-};
+import { Product } from "../types/Product";
 
 const AdminProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);

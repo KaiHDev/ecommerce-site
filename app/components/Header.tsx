@@ -8,14 +8,7 @@ import { TextField, Autocomplete, Box, Typography } from "@mui/material";
 import { useCartStore } from "@/lib/useCartStore";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
-
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  slug: string;
-  primary_image_url?: string;
-};
+import { Product } from "../types/Product";
 
 const ShopHeader = () => {
   const router = useRouter();
@@ -30,25 +23,27 @@ const ShopHeader = () => {
     const fetchProducts = async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, slug, product_images (image_url)")
+        .select(`
+          id, name, price, slug, sku, product_images (image_url, image_order)
+        `)
         .limit(10);
-
+  
       if (error) {
         console.error("Error fetching products:", error.message);
-      } else {
-        const productsWithImages = (data as any[]).map((product) => ({
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          slug: product.slug,
-          primary_image_url: product.product_images?.[0]?.image_url || "/images/Placeholder.jpg",
+      } else if (data) {
+        const productsWithImages: Product[] = data.map((product) => ({
+          ...product,
+          product_images: product.product_images || [],
+          primary_image_url:
+            product.product_images?.[0]?.image_url || "/images/Placeholder.jpg",
         }));
+  
         setProducts(productsWithImages);
       }
     };
-
+  
     fetchProducts();
-  }, []);
+  }, []);  
 
   const handleSearchChange = (_event: React.SyntheticEvent, value: string | Product | null) => {
     if (typeof value === "string") {
@@ -63,7 +58,7 @@ const ShopHeader = () => {
 
   const handleSelect = (
     _event: React.SyntheticEvent,
-    newValue: string | Product | null,
+    newValue: string | Product | null
   ) => {
     if (newValue && typeof newValue === "object" && "slug" in newValue) {
       router.push(`/shop/product/${newValue.slug}`);
@@ -90,12 +85,9 @@ const ShopHeader = () => {
               <TextField {...params} label="Search Products" variant="outlined" fullWidth sx={{ width: 500 }} />
             )}
             renderOption={(props, option) => {
-              const { key, ...restProps } = props;
               return (
                 <Box
-                  key={key}
                   component="li"
-                  {...restProps}
                   sx={{
                     display: "flex",
                     alignItems: "center",
@@ -105,7 +97,9 @@ const ShopHeader = () => {
                     borderBottom: "1px solid #e0e0e0",
                     "&:last-child": { borderBottom: "none" },
                   }}
+                  {...props}
                 >
+                  {/* Product Image */}
                   <Image
                     src={option.primary_image_url ?? "/images/Placeholder.jpg"}
                     alt={option.name}
@@ -123,7 +117,7 @@ const ShopHeader = () => {
                   </Box>
                 </Box>
               );
-            }}
+            }}                        
           />
         </div>
 
